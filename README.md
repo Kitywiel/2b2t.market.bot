@@ -6,6 +6,8 @@
 
 ## updates
 
+added / commanands
+
 Non at this time
 
 other info
