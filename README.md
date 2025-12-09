@@ -5,6 +5,7 @@
 * `/add`
 * `/view-items`
 * `/remove-item`
+* `/sell`
 
 ## updates
 
