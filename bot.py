@@ -41,6 +41,7 @@ async def on_ready():
     except Exception as e:
         print(f'Failed to sync commands: {e}')
 
+<<<<<<< HEAD
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     """Global error handler for slash commands"""
@@ -67,6 +68,8 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
     except:
         pass  # Can't send error message
 
+=======
+>>>>>>> e64f6e4 (Initial commit)
 @bot.event
 async def on_message(message):
     # Ignore messages from the bot itself
@@ -100,6 +103,7 @@ async def info(ctx):
 # Slash Commands
 @bot.tree.command(name='hello', description='Get a friendly greeting from the bot')
 async def slash_hello(interaction: discord.Interaction):
+<<<<<<< HEAD
     try:
         await interaction.response.send_message(f'Hello {interaction.user.mention}! 👋')
     except discord.errors.NotFound:
@@ -127,10 +131,31 @@ async def slash_info(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
     except discord.errors.NotFound:
         pass  # Interaction expired
+=======
+    await interaction.response.send_message(f'Hello {interaction.user.mention}! 👋')
+
+@bot.tree.command(name='ping', description='Check the bot\'s latency')
+async def slash_ping(interaction: discord.Interaction):
+    latency = round(bot.latency * 1000)
+    await interaction.response.send_message(f'Pong! Latency: {latency}ms')
+
+@bot.tree.command(name='info', description='Display bot information')
+async def slash_info(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="Bot Information",
+        description="2b2t Market Bot",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="Servers", value=len(bot.guilds), inline=True)
+    embed.add_field(name="Users", value=len(bot.users), inline=True)
+    embed.add_field(name="Latency", value=f"{round(bot.latency * 1000)}ms", inline=True)
+    await interaction.response.send_message(embed=embed)
+>>>>>>> e64f6e4 (Initial commit)
 
 @bot.tree.command(name='userinfo', description='Get information about a user')
 @app_commands.describe(user='The user to get information about')
 async def slash_userinfo(interaction: discord.Interaction, user: discord.Member = None):
+<<<<<<< HEAD
     try:
         user = user or interaction.user
         embed = discord.Embed(
@@ -167,6 +192,38 @@ async def slash_serverinfo(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
     except discord.errors.NotFound:
         pass  # Interaction expired
+=======
+    user = user or interaction.user
+    embed = discord.Embed(
+        title=f"User Info - {user.name}",
+        color=discord.Color.green()
+    )
+    embed.set_thumbnail(url=user.display_avatar.url)
+    embed.add_field(name="Username", value=f"{user.name}#{user.discriminator}", inline=True)
+    embed.add_field(name="ID", value=user.id, inline=True)
+    embed.add_field(name="Nickname", value=user.nick or "None", inline=True)
+    embed.add_field(name="Account Created", value=user.created_at.strftime("%Y-%m-%d"), inline=True)
+    embed.add_field(name="Joined Server", value=user.joined_at.strftime("%Y-%m-%d"), inline=True)
+    embed.add_field(name="Roles", value=len(user.roles), inline=True)
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name='serverinfo', description='Get information about the server')
+async def slash_serverinfo(interaction: discord.Interaction):
+    guild = interaction.guild
+    embed = discord.Embed(
+        title=f"Server Info - {guild.name}",
+        color=discord.Color.purple()
+    )
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+    embed.add_field(name="Server ID", value=guild.id, inline=True)
+    embed.add_field(name="Owner", value=guild.owner.mention, inline=True)
+    embed.add_field(name="Members", value=guild.member_count, inline=True)
+    embed.add_field(name="Channels", value=len(guild.channels), inline=True)
+    embed.add_field(name="Roles", value=len(guild.roles), inline=True)
+    embed.add_field(name="Created", value=guild.created_at.strftime("%Y-%m-%d"), inline=True)
+    await interaction.response.send_message(embed=embed)
+>>>>>>> e64f6e4 (Initial commit)
 
 # Run the bot
 if __name__ == '__main__':
