@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os
+import asyncio
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -15,10 +16,25 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+async def load_cogs():
+    """Load all cogs from the cogs directory"""
+    if os.path.exists('cogs'):
+        for filename in os.listdir('cogs'):
+            if filename.endswith('.py') and not filename.startswith('_'):
+                try:
+                    await bot.load_extension(f'cogs.{filename[:-3]}')
+                    print(f'Loaded cog: {filename[:-3]}')
+                except Exception as e:
+                    print(f'Failed to load cog {filename}: {e}')
+
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
     print(f'Bot is in {len(bot.guilds)} guilds')
+    
+    # Load cogs
+    await load_cogs()
+    
     try:
         synced = await bot.tree.sync()
         print(f'Synced {len(synced)} slash command(s)')
