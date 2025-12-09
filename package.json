@@ -1,7 +1,7 @@
 {
   "name": "2b2t-market-bot",
-  "version": "1.0.0",
-  "description": "Discord bot for 2b2t.market - buttons, modal, local testing",
+  "version": "1.0.0.0",
+  "description": "Discord bot for 2b2t.market - buttons, modal, local hosting",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
