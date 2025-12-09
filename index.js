@@ -18,6 +18,7 @@ const {
 
 // Optional keep-alive for Replit / similar
 try { require("./keep_alive"); } catch (e) { /* optional */ }
+try {require("./keep_alive_webhook");} catch (e) { console.warn("keep_alive_webhook failed:", e); }
 
 const BOT_PREFIX = process.env.BOT_PREFIX || "!";
 const TOKEN = process.env.BOT_TOKEN;
