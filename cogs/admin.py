@@ -22,12 +22,30 @@ class Admin(commands.Cog):
         await interaction.followup.send(embed=embed)
         
         try:
+            # Check if git is available
+            git_check = subprocess.run(
+                ['git', '--version'],
+                capture_output=True,
+                text=True,
+                shell=True  # Use shell on Windows
+            )
+            
+            if git_check.returncode != 0:
+                embed = discord.Embed(
+                    title="❌ Git Not Found",
+                    description="Git is not installed or not in PATH.\n\n**To fix:**\n1. Download Git from [git-scm.com](https://git-scm.com/download/win)\n2. Install it and restart your computer\n3. Or manually update files from GitHub",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
             # Pull latest changes from git
             result = subprocess.run(
                 ['git', 'pull'],
                 capture_output=True,
                 text=True,
-                cwd=os.path.dirname(os.path.dirname(__file__))
+                cwd=os.path.dirname(os.path.dirname(__file__)),
+                shell=True  # Use shell on Windows
             )
             
             if result.returncode != 0:
@@ -40,7 +58,7 @@ class Admin(commands.Cog):
                 return
             
             # Check if there were updates
-            if "Already up to date" in result.stdout:
+            if "Already up to date" in result.stdout or "Already up-to-date" in result.stdout:
                 embed = discord.Embed(
                     title="✅ Already Up to Date",
                     description="No updates available.",
@@ -61,10 +79,17 @@ class Admin(commands.Cog):
             await self.bot.close()
             os.execv(sys.executable, ['python'] + sys.argv)
             
+        except FileNotFoundError:
+            embed = discord.Embed(
+                title="❌ Git Not Installed",
+                description="Git is not installed on this system.\n\n**To install Git:**\n1. Download from [git-scm.com](https://git-scm.com/download/win)\n2. Run the installer\n3. Restart your computer\n4. Try `/update` again",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
         except Exception as e:
             embed = discord.Embed(
                 title="❌ Error",
-                description=f"An error occurred: {str(e)}",
+                description=f"An error occurred: {str(e)}\n\nYou can manually update by downloading the latest files from GitHub.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)

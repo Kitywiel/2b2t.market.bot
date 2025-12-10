@@ -180,16 +180,6 @@ async def slash_serverinfo(interaction: discord.Interaction):
     except discord.errors.NotFound:
         pass  # Interaction expired
 
-@bot.tree.command(name='notify', description='Ping a user with a custom message')
-@app_commands.describe(user='The user to ping', message='The message to send')
-async def notify_user(interaction: discord.Interaction, user: discord.Member, message: str):
-    try:
-        await interaction.response.send_message(
-            f"{user.mention} - {message}\n\n*Sent by {interaction.user.mention}*"
-        )
-    except discord.errors.NotFound:
-        pass  # Interaction expired
-
 # Run the bot
 if __name__ == '__main__':
     TOKEN = os.getenv('DISCORD_BOT_TOKEN')
