@@ -36,6 +36,8 @@ async def on_ready():
     await load_cogs()
     
     try:
+        # Clear and resync commands
+        bot.tree.clear_commands(guild=None)
         synced = await bot.tree.sync()
         print(f'Synced {len(synced)} slash command(s)')
     except Exception as e:
