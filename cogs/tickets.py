@@ -64,17 +64,6 @@ class TicketSystem(commands.Cog):
         guild = interaction.guild
         user = interaction.user
 
-        # Check if user already has an open ticket
-        for ticket_id, ticket_data in self.tickets.items():
-            if ticket_data.get('user_id') == user.id and ticket_data.get('status') == 'open':
-                channel = guild.get_channel(ticket_data.get('channel_id'))
-                if channel:
-                    await interaction.response.send_message(
-                        f"❌ You already have an open ticket: {channel.mention}",
-                        ephemeral=True
-                    )
-                    return
-
         await interaction.response.defer(ephemeral=True)
 
         try:
