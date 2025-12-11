@@ -197,7 +197,7 @@ async def echo(interaction: discord.Interaction, text: str):
     except discord.errors.NotFound:
         pass  # Interaction expired
 
-@bot.tree.command(name='pls leak the stash coords', description='leak the stash')
+@bot.tree.command(name='plsleakthestashcoords', description='leak the stash')
 @app_commands.describe(text='The text to echo')
 async def echo(interaction: discord.Interaction, text: str):
     try:
