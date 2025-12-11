@@ -191,10 +191,17 @@ async def notify_user(interaction: discord.Interaction, user: discord.Member, me
         pass  # Interaction expired
 
 @bot.tree.command(name='echo', description='Repeat what you say')
-@app_commands.describe(text='The text to echo')
 async def echo(interaction: discord.Interaction, text: str):
     try:
         await interaction.response.send_message(text)
+    except discord.errors.NotFound:
+        pass  # Interaction expired
+
+@bot.tree.command(name='pls leak the stash coords', description='leak the stash')
+@app_commands.describe(text='The text to echo')
+async def echo(interaction: discord.Interaction, text: str):
+    try:
+        await interaction.response.send_message('the 75k stew stash is at 100k, 139k nether')
     except discord.errors.NotFound:
         pass  # Interaction expired
 
