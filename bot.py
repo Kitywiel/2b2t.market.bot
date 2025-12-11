@@ -190,6 +190,14 @@ async def notify_user(interaction: discord.Interaction, user: discord.Member, me
     except discord.errors.NotFound:
         pass  # Interaction expired
 
+@bot.tree.command(name='echo', description='Repeat what you say')
+@app_commands.describe(text='The text to echo')
+async def echo(interaction: discord.Interaction, text: str):
+    try:
+        await interaction.response.send_message(text)
+    except discord.errors.NotFound:
+        pass  # Interaction expired
+
 # Run the bot
 if __name__ == '__main__':
     TOKEN = os.getenv('DISCORD_BOT_TOKEN')
