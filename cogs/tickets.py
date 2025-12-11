@@ -1,11 +1,10 @@
 import discord
-
-
 from discord import app_commands
 from discord.ext import commands
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+import asyncio
 
 class TicketSystem(commands.Cog):
     def __init__(self, bot):
@@ -205,7 +204,7 @@ class TicketSystem(commands.Cog):
 
         # Delete channel after delay
         await channel.send("Deleting channel in 10 seconds...")
-        await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=10))
+        await asyncio.sleep(10)
         await channel.delete()
 
     @app_commands.command(name='addtoticket', description='Add a user to the current ticket')
@@ -353,7 +352,7 @@ class TicketControls(discord.ui.View):
         await interaction.followup.send(embed=embed)
 
         # Delete channel after delay
-        await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=10))
+        await asyncio.sleep(10)
         await channel.delete()
 
 
