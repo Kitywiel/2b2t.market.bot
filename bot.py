@@ -11,14 +11,14 @@ load_dotenv()
 # Bot configuration
 intents = discord.Intents.default()
 intents.message_content = True
-intents.guilds = True
-intents.members = True
+intents. guilds = True
+intents. members = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands. Bot(command_prefix='!', intents=intents)
 
 async def load_cogs():
     """Load all cogs from the cogs directory"""
-    if os.path.exists('cogs'):
+    if os. path.exists('cogs'):
         for filename in os.listdir('cogs'):
             if filename.endswith('.py') and not filename.startswith('_'):
                 try:
@@ -42,13 +42,13 @@ async def on_ready():
         print(f'Failed to sync commands: {e}')
 
 @bot.tree.error
-async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+async def on_app_command_error(interaction: discord. Interaction, error: app_commands. AppCommandError):
     """Global error handler for slash commands"""
     # Handle missing permissions
     if isinstance(error, app_commands.MissingPermissions):
         try:
-            await interaction.response.send_message(
-                f"❌ You don't have permission to use this command.\n**Required:** {', '.join(error.missing_permissions)}",
+            await interaction.response. send_message(
+                f"❌ You don't have permission to use this command.\n**Required:** {', '.join(error. missing_permissions)}",
                 ephemeral=True
             )
         except:
@@ -86,7 +86,7 @@ async def on_message(message):
         return
     
     # Process commands
-    await bot.process_commands(message)
+    await bot. process_commands(message)
 
 @bot.command(name='hello', help='Responds with a greeting')
 async def hello(ctx):
@@ -105,75 +105,75 @@ async def info(ctx):
         color=discord.Color.blue()
     )
     embed.add_field(name="Servers", value=len(bot.guilds), inline=True)
-    embed.add_field(name="Users", value=len(bot.users), inline=True)
+    embed.add_field(name="Users", value=len(bot. users), inline=True)
     embed.add_field(name="Prefix", value="!", inline=True)
     await ctx.send(embed=embed)
 
 # Slash Commands
-@bot.tree.command(name='hello', description='Get a friendly greeting from the bot')
+@bot.tree. command(name='hello', description='Get a friendly greeting from the bot')
 async def slash_hello(interaction: discord.Interaction):
     try:
-        await interaction.response.send_message(f'Hello {interaction.user.mention}! 👋')
+        await interaction.response.send_message(f'Hello {interaction.user.mention}!  👋')
     except discord.errors.NotFound:
         pass  # Interaction expired
 
 @bot.tree.command(name='ping', description='Check the bot\'s latency')
-async def slash_ping(interaction: discord.Interaction):
+async def slash_ping(interaction: discord. Interaction):
     try:
         latency = round(bot.latency * 1000)
-        await interaction.response.send_message(f'Pong! Latency: {latency}ms')
-    except discord.errors.NotFound:
+        await interaction.response.send_message(f'Pong!  Latency: {latency}ms')
+    except discord.errors. NotFound:
         pass  # Interaction expired
 
 @bot.tree.command(name='info', description='Display bot information')
-async def slash_info(interaction: discord.Interaction):
+async def slash_info(interaction: discord. Interaction):
     try:
         embed = discord.Embed(
             title="Bot Information",
             description="2b2t Market Bot",
-            color=discord.Color.blue()
+            color=discord. Color.blue()
         )
         embed.add_field(name="Servers", value=len(bot.guilds), inline=True)
         embed.add_field(name="Users", value=len(bot.users), inline=True)
         embed.add_field(name="Latency", value=f"{round(bot.latency * 1000)}ms", inline=True)
         await interaction.response.send_message(embed=embed)
-    except discord.errors.NotFound:
+    except discord. errors.NotFound:
         pass  # Interaction expired
 
 @bot.tree.command(name='userinfo', description='Get information about a user')
 @app_commands.describe(user='The user to get information about')
-async def slash_userinfo(interaction: discord.Interaction, user: discord.Member = None):
+async def slash_userinfo(interaction: discord. Interaction, user: discord.Member = None):
     try:
         user = user or interaction.user
         embed = discord.Embed(
             title=f"User Info - {user.name}",
             color=discord.Color.green()
         )
-        embed.set_thumbnail(url=user.display_avatar.url)
-        embed.add_field(name="Username", value=f"{user.name}#{user.discriminator}", inline=True)
+        embed.set_thumbnail(url=user. display_avatar.url)
+        embed.add_field(name="Username", value=f"{user. name}#{user.discriminator}", inline=True)
         embed.add_field(name="ID", value=user.id, inline=True)
         embed.add_field(name="Nickname", value=user.nick or "None", inline=True)
         embed.add_field(name="Account Created", value=user.created_at.strftime("%Y-%m-%d"), inline=True)
-        embed.add_field(name="Joined Server", value=user.joined_at.strftime("%Y-%m-%d"), inline=True)
+        embed.add_field(name="Joined Server", value=user. joined_at.strftime("%Y-%m-%d"), inline=True)
         embed.add_field(name="Roles", value=len(user.roles), inline=True)
         await interaction.response.send_message(embed=embed)
-    except discord.errors.NotFound:
+    except discord.errors. NotFound:
         pass  # Interaction expired
 
 @bot.tree.command(name='serverinfo', description='Get information about the server')
 async def slash_serverinfo(interaction: discord.Interaction):
     try:
         guild = interaction.guild
-        embed = discord.Embed(
+        embed = discord. Embed(
             title=f"Server Info - {guild.name}",
-            color=discord.Color.purple()
+            color=discord. Color.purple()
         )
         if guild.icon:
             embed.set_thumbnail(url=guild.icon.url)
         embed.add_field(name="Server ID", value=guild.id, inline=True)
         embed.add_field(name="Owner", value=guild.owner.mention, inline=True)
         embed.add_field(name="Members", value=guild.member_count, inline=True)
-        embed.add_field(name="Channels", value=len(guild.channels), inline=True)
+        embed.add_field(name="Channels", value=len(guild. channels), inline=True)
         embed.add_field(name="Roles", value=len(guild.roles), inline=True)
         embed.add_field(name="Created", value=guild.created_at.strftime("%Y-%m-%d"), inline=True)
         await interaction.response.send_message(embed=embed)
@@ -182,7 +182,7 @@ async def slash_serverinfo(interaction: discord.Interaction):
 
 @bot.tree.command(name='notify', description='Ping a user with a custom message')
 @app_commands.describe(user='The user to ping', message='The message to send')
-async def notify_user(interaction: discord.Interaction, user: discord.Member, message: str):
+async def notify_user(interaction: discord. Interaction, user: discord.Member, message: str):
     try:
         await interaction.response.send_message(
             f"{user.mention} - {message}\n\n*Sent by {interaction.user.mention}*"
@@ -190,19 +190,18 @@ async def notify_user(interaction: discord.Interaction, user: discord.Member, me
     except discord.errors.NotFound:
         pass  # Interaction expired
 
-@bot.tree.command(name='echo', description='Repeat what you say')
+@bot. tree.command(name='echo', description='Repeat what you say')
 async def echo(interaction: discord.Interaction, text: str):
     try:
         await interaction.response.send_message(text)
-    except discord.errors.NotFound:
+    except discord.errors. NotFound:
         pass  # Interaction expired
 
-@bot.tree.command(name='plsleakthestashcoords', description='leak the stash')
-@app_commands.describe(text='The text to echo')
-async def echo(interaction: discord.Interaction, text: str):
+@bot.tree.command(name='pls leak the stash coords', description='leak the stash')
+async def leak_stash_coords(interaction: discord.Interaction):
     try:
         await interaction.response.send_message('the 75k stew stash is at 100k, 139k nether')
-    except discord.errors.NotFound:
+    except discord. errors.NotFound:
         pass  # Interaction expired
 
 # Run the bot
