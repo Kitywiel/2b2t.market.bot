@@ -62,12 +62,19 @@ class Chat(commands.Cog):
                 for embed in message.embeds:
                     await forward_channel.send(embed=embed)
             else:
+                # Extract username from message like ".Username connected"
+                username = "Unknown"
+                if message.content.startswith('.'):
+                    parts = message.content.split()
+                    if len(parts) > 0:
+                        username = parts[0][1:]  # Remove the dot
+                
                 # Create embed from text message
                 embed = discord.Embed(
                     description=message.content,
                     color=discord.Color.blue()
                 )
-                embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
+                embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                 embed.timestamp = message.created_at
                 
                 await forward_channel.send(embed=embed)
