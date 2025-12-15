@@ -74,8 +74,15 @@ class Chat(commands.Cog):
             if not setups:
                 return
             
+            # Track if we've sent a message to avoid duplicates (globally per message)
+            message_sent = False
+            
             # Check all setups for this guild
             for setup in setups:
+                # Skip if we've already processed this dot event
+                if message_sent:
+                    break
+                    
                 watch_channel_id = setup.get('watch_channel_id')
                 forward_channel_id = setup.get('forward_channel_id')
                 
@@ -93,9 +100,6 @@ class Chat(commands.Cog):
                 # Get webhooks for this setup
                 setup_key = f"{watch_channel_id}_{forward_channel_id}"
                 webhook_urls = self.webhooks.get(str(message.guild.id), {}).get(setup_key, [])
-                
-                # Track if we've sent a message to avoid duplicates
-                message_sent = False
                 
                 # If the message has embeds, forward only ones that start with .
                 if message.embeds:
