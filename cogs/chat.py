@@ -395,10 +395,6 @@ class Chat(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def add_webhook(self, interaction: discord.Interaction, watch_channel: discord.TextChannel, webhook_url: str):
         try:
-            # Defer immediately
-            if not interaction.response.is_done():
-                await interaction.response.defer(ephemeral=True)
-            
             guild_id_str = str(interaction.guild.id)
             
             # Find the setup for this watch channel
@@ -416,7 +412,7 @@ class Chat(commands.Cog):
                     description=f"No dot notification setup found for {watch_channel.mention}. Run `/setupdotnotify` first.",
                     color=discord.Color.red()
                 )
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             # Validate webhook URL
@@ -426,7 +422,7 @@ class Chat(commands.Cog):
                     description="Please provide a valid Discord webhook URL.",
                     color=discord.Color.red()
                 )
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
             # Add webhook
@@ -454,7 +450,7 @@ class Chat(commands.Cog):
                     color=discord.Color.blue()
                 )
             
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
         
         except Exception as e:
             import traceback
@@ -471,12 +467,12 @@ class Chat(commands.Cog):
             embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             
             try:
-                if not interaction.response.is_done():
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
-                else:
-                    await interaction.followup.send(embed=embed, ephemeral=True)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
             except:
-                pass
+                try:
+                    await interaction.followup.send(embed=embed, ephemeral=True)
+                except:
+                    pass
 
     @app_commands.command(name='listwebhooks', description='List all configured webhooks')
     @app_commands.checks.has_permissions(administrator=True)
