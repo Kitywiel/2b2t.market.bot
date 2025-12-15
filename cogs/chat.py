@@ -71,12 +71,18 @@ class Chat(commands.Cog):
                 
                 # If the message has embeds, forward only ones that start with .
                 if message.embeds:
-                    for embed in message.embeds:
+                    print(f"Found {len(message.embeds)} embeds in message from {message.author.name}")
+                    for i, embed in enumerate(message.embeds):
+                        print(f"Embed {i}: description = '{embed.description}'")
                         # Check if embed description starts with a dot
                         if embed.description and embed.description.strip().startswith('.'):
+                            print(f"Forwarding embed {i}!")
                             await forward_channel.send(embed=embed)
+                        else:
+                            print(f"Skipping embed {i} - doesn't start with .")
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
+                    print(f"Text message starts with dot: {message.content}")
                     # Extract username from message like ".Username connected"
                     username = "Unknown"
                     if message.content.startswith('.'):
