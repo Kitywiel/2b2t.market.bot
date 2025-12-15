@@ -424,11 +424,12 @@ class Chat(commands.Cog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            # Validate webhook URL
-            if not webhook_url.startswith('https://discord.com/api/webhooks/'):
+            # Validate webhook URL (accept both discord.com and discordapp.com)
+            if not (webhook_url.startswith('https://discord.com/api/webhooks/') or 
+                    webhook_url.startswith('https://discordapp.com/api/webhooks/')):
                 embed = discord.Embed(
                     title="❌ Invalid Webhook",
-                    description="Please provide a valid Discord webhook URL.",
+                    description="Please provide a valid Discord webhook URL.\nMust start with `https://discord.com/api/webhooks/` or `https://discordapp.com/api/webhooks/`",
                     color=discord.Color.red()
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
