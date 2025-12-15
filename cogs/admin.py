@@ -128,5 +128,31 @@ class Admin(commands.Cog):
             )
             await interaction.followup.send(embed=embed)
 
+    @app_commands.command(name='reload', description='Reload a specific cog')
+    @app_commands.describe(cog='The name of the cog to reload (e.g., itemmarket, tickets, admin)')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def reload(self, interaction: discord.Interaction, cog: str):
+        await interaction.response.defer()
+        
+        try:
+            # Unload the cog
+            await self.bot.unload_extension(f'cogs.{cog}')
+            # Reload the cog
+            await self.bot.load_extension(f'cogs.{cog}')
+            
+            embed = discord.Embed(
+                title="✅ Cog Reloaded",
+                description=f"Successfully reloaded `{cog}` cog.",
+                color=discord.Color.green()
+            )
+            await interaction.followup.send(embed=embed)
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Reload Failed",
+                description=f"Error: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+
 async def setup(bot):
     await bot.add_cog(Admin(bot))
