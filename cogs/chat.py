@@ -403,6 +403,8 @@ class Chat(commands.Cog):
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def add_webhook(self, interaction: discord.Interaction, watch_channel: discord.TextChannel, webhook_url: str):
+        await interaction.response.defer(ephemeral=True)
+        
         try:
             guild_id_str = str(interaction.guild.id)
             
@@ -421,7 +423,7 @@ class Chat(commands.Cog):
                     description=f"No dot notification setup found for {watch_channel.mention}. Run `/setupdotnotify` first.",
                     color=discord.Color.red()
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             
             # Validate webhook URL (accept both discord.com and discordapp.com)
@@ -432,7 +434,7 @@ class Chat(commands.Cog):
                     description="Please provide a valid Discord webhook URL.\nMust start with `https://discord.com/api/webhooks/` or `https://discordapp.com/api/webhooks/`",
                     color=discord.Color.red()
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             
             # Add webhook
@@ -460,7 +462,7 @@ class Chat(commands.Cog):
                     color=discord.Color.blue()
                 )
             
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
         
         except Exception as e:
             import traceback
