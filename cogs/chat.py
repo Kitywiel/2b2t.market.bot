@@ -86,9 +86,21 @@ class Chat(commands.Cog):
                                 if len(parts) >= 2:
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
-                                        await forward_channel.send(embed=embed)
+                                        sent_msg = await forward_channel.send(embed=embed)
+                                        # Publish if in announcement channel
+                                        if forward_channel.type == discord.ChannelType.news:
+                                            try:
+                                                await sent_msg.publish()
+                                            except:
+                                                pass
                             elif desc.startswith('.'):
-                                await forward_channel.send(embed=embed)
+                                sent_msg = await forward_channel.send(embed=embed)
+                                # Publish if in announcement channel
+                                if forward_channel.type == discord.ChannelType.news:
+                                    try:
+                                        await sent_msg.publish()
+                                    except:
+                                        pass
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
@@ -105,7 +117,13 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
-                    await forward_channel.send(embed=embed)
+                    sent_msg = await forward_channel.send(embed=embed)
+                    # Publish if in announcement channel
+                    if forward_channel.type == discord.ChannelType.news:
+                        try:
+                            await sent_msg.publish()
+                        except:
+                            pass
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")

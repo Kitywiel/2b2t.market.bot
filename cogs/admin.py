@@ -154,5 +154,126 @@ class Admin(commands.Cog):
             )
             await interaction.followup.send(embed=embed)
 
+    @app_commands.command(name='reloadall', description='Reload all cogs at once')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def reload_all(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
+        try:
+            # Get all loaded cogs
+            cog_names = list(self.bot.cogs.keys())
+            
+            reloaded = []
+            failed = []
+            
+            for cog_name in cog_names:
+                # Don't reload the Admin cog while we're using it
+                if cog_name == 'Admin':
+                    continue
+                    
+                try:
+                    # Find the extension name
+                    extension_name = f'cogs.{cog_name.lower()}'
+                    await self.bot.reload_extension(extension_name)
+                    reloaded.append(cog_name)
+                except Exception as e:
+                    failed.append(f"{cog_name}: {str(e)}")
+            
+            # Reload Admin cog last
+            try:
+                await self.bot.reload_extension('cogs.admin')
+                reloaded.append('Admin')
+            except Exception as e:
+                failed.append(f"Admin: {str(e)}")
+            
+            embed = discord.Embed(
+                title="🔄 Reload All Cogs",
+                color=discord.Color.green() if not failed else discord.Color.orange()
+            )
+            
+            if reloaded:
+                embed.add_field(
+                    name=f"✅ Reloaded ({len(reloaded)})",
+                    value="\n".join(reloaded),
+                    inline=False
+                )
+            
+            if failed:
+                embed.add_field(
+                    name=f"❌ Failed ({len(failed)})",
+                    value="\n".join(failed),
+                    inline=False
+                )
+            
+            await interaction.followup.send(embed=embed)
+            
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Reload All Failed",
+                description=f"Error: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+
+    @app_commands.command(name='resetallconfigs', description='Delete ALL config/data files (chat_config.json, itemmarket.json, etc.)')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def reset_all_configs(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer(ephemeral=True)
+            
+            # List of config files to delete
+            config_files = [
+                'chat_config.json',
+                'itemmarket.json',
+                'itemmarket_config.json'
+            ]
+            
+            deleted = []
+            not_found = []
+            
+            for file in config_files:
+                if os.path.exists(file):
+                    os.remove(file)
+                    deleted.append(file)
+                else:
+                    not_found.append(file)
+            
+            embed = discord.Embed(
+                title="⚠️ All Configs Reset",
+                description=f"**Deleted {len(deleted)} file(s):**\n" + "\n".join(f"✅ {f}" for f in deleted),
+                color=discord.Color.red()
+            )
+            
+            if not_found:
+                embed.add_field(
+                    name="Not Found",
+                    value="\n".join(f"❌ {f}" for f in not_found),
+                    inline=False
+                )
+            
+            embed.add_field(
+                name="⚠️ Important",
+                value="All configurations have been deleted. You need to run setup commands again and `/restart` the bot.",
+                inline=False
+            )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
+            embed = discord.Embed(
+                title="❌ Error Resetting Configs",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(Admin(bot))
