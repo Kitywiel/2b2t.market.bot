@@ -151,36 +151,61 @@ class ItemMarket(commands.Cog):
     @app_commands.describe(item_channel='The channel where items will be posted')
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_market(self, interaction: discord.Interaction, item_channel: discord.TextChannel):
-        guild_id_str = str(interaction.guild.id)
+        try:
+            guild_id_str = str(interaction.guild.id)
+            
+            if guild_id_str not in self.config:
+                self.config[guild_id_str] = {}
+            
+            self.config[guild_id_str]['item_channel_id'] = item_channel.id
+            self.save_config()
+            
+            embed = discord.Embed(
+                title="✅ Market System Configured",
+                description="The item market has been set up!",
+                color=discord.Color.green()
+            )
+            embed.add_field(
+                name="📦 Item Channel",
+                value=item_channel.mention,
+                inline=False
+            )
+            embed.add_field(
+                name="How to use",
+                value=(
+                    "• Use `/itemmarket` to list items\n"
+                    "• Items will be posted in the configured channel\n"
+                    "• Use `/removeitem` to delete listings\n"
+                    "• Use `/updateitem` to edit listings"
+                ),
+                inline=False
+            )
+            
+            await interaction.response.send_message(embed=embed)
         
-        if guild_id_str not in self.config:
-            self.config[guild_id_str] = {}
-        
-        self.config[guild_id_str]['item_channel_id'] = item_channel.id
-        self.save_config()
-        
-        embed = discord.Embed(
-            title="✅ Market System Configured",
-            description="The item market has been set up!",
-            color=discord.Color.green()
-        )
-        embed.add_field(
-            name="📦 Item Channel",
-            value=item_channel.mention,
-            inline=False
-        )
-        embed.add_field(
-            name="How to use",
-            value=(
-                "• Use `/itemmarket` to list items\n"
-                "• Items will be posted in the configured channel\n"
-                "• Use `/removeitem` to delete listings\n"
-                "• Use `/updateitem` to edit listings"
-            ),
-            inline=False
-        )
-        
-        await interaction.response.send_message(embed=embed)
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            embed = discord.Embed(
+                title="❌ Error in Setup",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
+                color=discord.Color.red()
+            )
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
+            embed.add_field(
+                name="Full Error Details",
+                value=f"```python\n{error_details}\n```",
+                inline=False
+            )
+            
+            try:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            except:
+                await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name='removeitem', description='Remove an item from the market')
     @app_commands.describe(message_id='The message ID of the item listing to remove')
