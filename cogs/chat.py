@@ -47,17 +47,10 @@ class Chat(commands.Cog):
             if not message.guild:
                 return
             
-            if not message.content.startswith('.'):
-                return
-            
             guild_id_str = str(message.guild.id)
             setups = self.config.get(guild_id_str, [])
             
-            print(f"Bot message: {message.content}")
-            print(f"Guild setups: {setups}")
-            
             if not setups:
-                print("No setups found")
                 return
             
             # Check all setups for this guild
@@ -65,21 +58,15 @@ class Chat(commands.Cog):
                 watch_channel_id = setup.get('watch_channel_id')
                 forward_channel_id = setup.get('forward_channel_id')
                 
-                print(f"Checking setup - Watch: {watch_channel_id}, Forward: {forward_channel_id}, Message channel: {message.channel.id}")
-                
                 if not watch_channel_id or not forward_channel_id:
                     continue
                 
                 # Skip if this message is not in this setup's watch channel
                 if message.channel.id != watch_channel_id:
-                    print("Wrong channel, skipping")
                     continue
-                
-                print("Match found! Forwarding...")
                 
                 forward_channel = message.guild.get_channel(forward_channel_id)
                 if not forward_channel:
-                    print("Forward channel not found")
                     continue
                 
                 # If the message has embeds, forward only ones that start with .
@@ -88,7 +75,8 @@ class Chat(commands.Cog):
                         # Check if embed description starts with a dot
                         if embed.description and embed.description.strip().startswith('.'):
                             await forward_channel.send(embed=embed)
-                else:
+                # If message content starts with ., create embed
+                elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
                     username = "Unknown"
                     if message.content.startswith('.'):
