@@ -5,6 +5,7 @@ import json
 import os
 from datetime import datetime
 
+
 class ItemMarket(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -50,19 +51,10 @@ class ItemMarket(commands.Cog):
         amount='The quantity available',
         itemid='Unique item identifier'
     )
-    async def item_market(
-        self, 
-        interaction: discord.Interaction, 
-        name: str, 
-        price: str, 
-        imgurl: str, 
-        amount: int, 
-        itemid: str
-    ):
+    async def item_market(self, interaction: discord.Interaction, name: str, price: str, imgurl: str, amount: int, itemid: str):
         await interaction.response.defer()
 
         try:
-            # Create item entry
             item_entry = {
                 'name': name,
                 'price': price,
@@ -73,46 +65,36 @@ class ItemMarket(commands.Cog):
                 'seller_name': str(interaction.user),
                 'timestamp': datetime.now().isoformat(),
                 'guild_id': interaction.guild.id if interaction.guild else None,
-                'message_id': None  # Will be set when posted to channel
+                'message_id': None
             }
 
-            # Add to items list
             self.items.append(item_entry)
             item_index = len(self.items) - 1
             self.save_data()
 
-            # Create market listing embed with new layout
             embed = discord.Embed(
                 title=name,
                 description=f"**Price:** {price}",
                 color=discord.Color.blue()
             )
             
-            # Set full image 
             if imgurl:
                 embed.set_image(url=imgurl)
             
-            # Put stock, item ID, and seller in footer with extra space
             embed.set_footer(text=f"Stock: {amount} | Item ID: {itemid} |  Seller: {interaction.user.name}")
             embed.timestamp = datetime.now()
 
-            # Create buy button
             view = BuyButton(self, item_index)
             
-            # Send to configured channel if available
             channel_id = self.get_item_channel(interaction.guild.id)
             if channel_id:
                 channel = interaction.guild.get_channel(channel_id)
                 if channel:
                     message = await channel.send(embed=embed, view=view)
-                    # Store message ID for later editing/deletion
                     self.items[item_index]['message_id'] = message.id
                     self.save_data()
                     
-                    await interaction.followup.send(
-                        f"✅ Item listed in {channel.mention}!",
-                        ephemeral=True
-                    )
+                    await interaction.followup.send(f"✅ Item listed in {channel.mention}!", ephemeral=True)
                 else:
                     await interaction.followup.send(embed=embed, view=view)
             else:
@@ -122,21 +104,15 @@ class ItemMarket(commands.Cog):
             import traceback
             error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
             
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
             embed = discord.Embed(
                 title="❌ Error Adding Item",
                 description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
                 color=discord.Color.red()
             )
-            
-            # Add full traceback in a code block (truncate if too long)
-            if len(error_details) > 1000:
-                error_details = error_details[-1000:]  # Last 1000 chars
-            
-            embed.add_field(
-                name="Full Error Details",
-                value=f"```python\n{error_details}\n```",
-                inline=False
-            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -160,19 +136,10 @@ class ItemMarket(commands.Cog):
                 description="The item market has been set up!",
                 color=discord.Color.green()
             )
-            embed.add_field(
-                name="📦 Item Channel",
-                value=item_channel.mention,
-                inline=False
-            )
+            embed.add_field(name="📦 Item Channel", value=item_channel.mention, inline=False)
             embed.add_field(
                 name="How to use",
-                value=(
-                    "• Use `/itemmarket` to list items\n"
-                    "• Items will be posted in the configured channel\n"
-                    "• Use `/removeitem` to delete listings\n"
-                    "• Use `/updateitem` to edit listings"
-                ),
+                value="• Use `/itemmarket` to list items\n• Items will be posted in the configured channel\n• Use `/removeitem` to delete listings\n• Use `/updateitem` to edit listings",
                 inline=False
             )
             
@@ -182,20 +149,15 @@ class ItemMarket(commands.Cog):
             import traceback
             error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
             
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
             embed = discord.Embed(
                 title="❌ Error in Setup",
                 description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
                 color=discord.Color.red()
             )
-            
-            if len(error_details) > 1000:
-                error_details = error_details[-1000:]
-            
-            embed.add_field(
-                name="Full Error Details",
-                value=f"```python\n{error_details}\n```",
-                inline=False
-            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -210,7 +172,6 @@ class ItemMarket(commands.Cog):
             await interaction.followup.send("❌ Invalid message ID format!", ephemeral=True)
             return
         
-        # Find item by message ID
         item_index = None
         item = None
         for i, itm in enumerate(self.items):
@@ -223,19 +184,13 @@ class ItemMarket(commands.Cog):
             await interaction.followup.send("❌ Item not found with that message ID!", ephemeral=True)
             return
         
-        # Check permissions: must be admin or the seller
         is_admin = interaction.user.guild_permissions.administrator
         is_seller = item['seller_id'] == interaction.user.id
         
         if not (is_admin or is_seller):
-            await interaction.followup.send(
-                "❌ You don't have permission to remove this item!\n"
-                "You must be an administrator or the seller.",
-                ephemeral=True
-            )
+            await interaction.followup.send("❌ You don't have permission to remove this item!\nYou must be an administrator or the seller.", ephemeral=True)
             return
         
-        # Delete the message if it exists
         channel_id = self.get_item_channel(interaction.guild.id)
         if channel_id:
             channel = interaction.guild.get_channel(channel_id)
@@ -244,9 +199,8 @@ class ItemMarket(commands.Cog):
                     message = await channel.fetch_message(msg_id)
                     await message.delete()
                 except:
-                    pass  # Message might already be deleted
+                    pass
         
-        # Remove from database
         self.items.pop(item_index)
         self.save_data()
         
@@ -266,16 +220,7 @@ class ItemMarket(commands.Cog):
         amount='New amount (optional)',
         itemid='New item ID (optional)'
     )
-    async def update_item(
-        self,
-        interaction: discord.Interaction,
-        message_id: str,
-        name: str = None,
-        price: str = None,
-        imgurl: str = None,
-        amount: int = None,
-        itemid: str = None
-    ):
+    async def update_item(self, interaction: discord.Interaction, message_id: str, name: str = None, price: str = None, imgurl: str = None, amount: int = None, itemid: str = None):
         await interaction.response.defer(ephemeral=True)
         
         try:
@@ -284,7 +229,6 @@ class ItemMarket(commands.Cog):
             await interaction.followup.send("❌ Invalid message ID format!", ephemeral=True)
             return
         
-        # Find item by message ID
         item_index = None
         item = None
         for i, itm in enumerate(self.items):
@@ -297,19 +241,13 @@ class ItemMarket(commands.Cog):
             await interaction.followup.send("❌ Item not found with that message ID!", ephemeral=True)
             return
         
-        # Check permissions: must be admin or the seller
         is_admin = interaction.user.guild_permissions.administrator
         is_seller = item['seller_id'] == interaction.user.id
         
         if not (is_admin or is_seller):
-            await interaction.followup.send(
-                "❌ You don't have permission to update this item!\n"
-                "You must be an administrator or the seller.",
-                ephemeral=True
-            )
+            await interaction.followup.send("❌ You don't have permission to update this item!\nYou must be an administrator or the seller.", ephemeral=True)
             return
         
-        # Update fields if provided
         if name:
             item['name'] = name
         if price:
@@ -323,7 +261,6 @@ class ItemMarket(commands.Cog):
         
         self.save_data()
         
-        # Update the message if it exists
         channel_id = self.get_item_channel(interaction.guild.id)
         if channel_id:
             channel = interaction.guild.get_channel(channel_id)
@@ -331,7 +268,6 @@ class ItemMarket(commands.Cog):
                 try:
                     message = await channel.fetch_message(msg_id)
                     
-                    # Recreate the embed with updated info
                     embed = discord.Embed(
                         title=item['name'],
                         description=f"**Price:** {item['price']}",
@@ -341,7 +277,6 @@ class ItemMarket(commands.Cog):
                     if item.get('imgurl'):
                         embed.set_image(url=item['imgurl'])
                     
-                    # Get seller username
                     try:
                         seller = interaction.guild.get_member(item['seller_id'])
                         seller_name = seller.name if seller else f"User {item['seller_id']}"
@@ -351,15 +286,11 @@ class ItemMarket(commands.Cog):
                     embed.set_footer(text=f"Stock: {item['amount']} | Item ID: {item['itemid']} |  Seller: {seller_name}")
                     embed.timestamp = datetime.fromisoformat(item['timestamp'])
                     
-                    # Recreate the buy button
                     view = BuyButton(self, item_index)
                     
                     await message.edit(embed=embed, view=view)
                 except Exception as e:
-                    await interaction.followup.send(
-                        f"⚠️ Item updated in database but couldn't update message: {str(e)}",
-                        ephemeral=True
-                    )
+                    await interaction.followup.send(f"⚠️ Item updated in database but couldn't update message: {str(e)}", ephemeral=True)
                     return
         
         embed = discord.Embed(
@@ -382,7 +313,6 @@ class ItemMarket(commands.Cog):
             await interaction.followup.send(embed=embed)
             return
 
-        # Show latest 10 items
         recent_items = self.items[-10:]
         
         embed = discord.Embed(
@@ -392,17 +322,8 @@ class ItemMarket(commands.Cog):
         )
 
         for item in recent_items:
-            field_value = (
-                f"💰 **Price:** {item['price']}\n"
-                f"📦 **Amount:** {item['amount']}\n"
-                f"🆔 **ID:** {item['itemid']}\n"
-                f"👤 **Seller:** <@{item['seller_id']}>"
-            )
-            embed.add_field(
-                name=f"{item['name']}", 
-                value=field_value, 
-                inline=False
-            )
+            field_value = f"💰 **Price:** {item['price']}\n📦 **Amount:** {item['amount']}\n🆔 **ID:** {item['itemid']}\n👤 **Seller:** <@{item['seller_id']}>"
+            embed.add_field(name=f"{item['name']}", value=field_value, inline=False)
 
         embed.set_footer(text="Use /searchmarket <itemid> to find specific items")
         
@@ -413,7 +334,6 @@ class ItemMarket(commands.Cog):
     async def search_market(self, interaction: discord.Interaction, itemid: str):
         await interaction.response.defer()
 
-        # Find items with matching ID
         matching_items = [item for item in self.items if item['itemid'].lower() == itemid.lower()]
 
         if not matching_items:
@@ -427,10 +347,7 @@ class ItemMarket(commands.Cog):
 
         item = matching_items[0]
         
-        embed = discord.Embed(
-            title=f"📦 {item['name']}",
-            color=discord.Color.green()
-        )
+        embed = discord.Embed(title=f"📦 {item['name']}", color=discord.Color.green())
         embed.add_field(name="💰 Price", value=item['price'], inline=True)
         embed.add_field(name="📦 Amount", value=str(item['amount']), inline=True)
         embed.add_field(name="🆔 Item ID", value=item['itemid'], inline=True)
@@ -452,17 +369,11 @@ class BuyButton(discord.ui.View):
 
     @discord.ui.button(label="💰 Buy", style=discord.ButtonStyle.green)
     async def buy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Check if item still exists
         if self.item_index >= len(self.cog.items):
-            await interaction.response.send_message(
-                "❌ This item is no longer available.",
-                ephemeral=True
-            )
+            await interaction.response.send_message("❌ This item is no longer available.", ephemeral=True)
             return
         
         item = self.cog.items[self.item_index]
-        
-        # Show modal to ask for amount
         modal = BuyModal(self.cog, self.item_index, item)
         await interaction.response.send_modal(modal)
 
@@ -483,12 +394,8 @@ class BuyModal(discord.ui.Modal, title="Purchase Item"):
         self.add_item(self.amount_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Refresh item data to get current amount
         if self.item_index >= len(self.cog.items):
-            await interaction.response.send_message(
-                "❌ This item is no longer available.",
-                ephemeral=True
-            )
+            await interaction.response.send_message("❌ This item is no longer available.", ephemeral=True)
             return
         
         current_item = self.cog.items[self.item_index]
@@ -496,27 +403,17 @@ class BuyModal(discord.ui.Modal, title="Purchase Item"):
         try:
             buy_amount = int(self.amount_input.value)
         except ValueError:
-            await interaction.response.send_message(
-                "❌ Please enter a valid number!",
-                ephemeral=True
-            )
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
             return
         
         if buy_amount <= 0:
-            await interaction.response.send_message(
-                "❌ Amount must be greater than 0!",
-                ephemeral=True
-            )
+            await interaction.response.send_message("❌ Amount must be greater than 0!", ephemeral=True)
             return
         
         if buy_amount > current_item['amount']:
-            await interaction.response.send_message(
-                f"❌ Not enough stock! Only {current_item['amount']} available.\nYou tried to buy {buy_amount}.",
-                ephemeral=True
-            )
+            await interaction.response.send_message(f"❌ Not enough stock! Only {current_item['amount']} available.\nYou tried to buy {buy_amount}.", ephemeral=True)
             return
         
-        # Create purchase confirmation embed
         embed = discord.Embed(
             title="✅ Purchase Request Sent",
             description=f"You want to buy **{buy_amount}x {current_item['name']}**",
@@ -524,15 +421,10 @@ class BuyModal(discord.ui.Modal, title="Purchase Item"):
         )
         embed.add_field(name="💰 Total Price", value=f"{buy_amount}x {current_item['price']}", inline=False)
         embed.add_field(name="👤 Seller", value=f"<@{current_item['seller_id']}>", inline=False)
-        embed.add_field(
-            name="📩 Next Steps",
-            value=f"Contact the seller <@{current_item['seller_id']}> to complete the transaction.",
-            inline=False
-        )
+        embed.add_field(name="📩 Next Steps", value=f"Contact the seller <@{current_item['seller_id']}> to complete the transaction.", inline=False)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
         
-        # Notify the seller
         try:
             seller = await interaction.client.fetch_user(current_item['seller_id'])
             seller_embed = discord.Embed(
@@ -546,7 +438,7 @@ class BuyModal(discord.ui.Modal, title="Purchase Item"):
             
             await seller.send(embed=seller_embed)
         except:
-            pass  # Seller might have DMs disabled
+            pass
 
 
 async def setup(bot):
