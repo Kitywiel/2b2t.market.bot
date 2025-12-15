@@ -92,15 +92,8 @@ class ItemMarket(commands.Cog):
             if imgurl:
                 embed.set_image(url=imgurl)
             
-            # Stock, Item ID, and Seller in one field below image
-            embed.add_field(
-                name=f"**{name}**", 
-                value=f"Stock: {amount}\nItem ID: {itemid}\nSeller: {interaction.user.mention}", 
-                inline=False
-            )
-            
-            # Upload time at the footer
-            embed.set_footer(text=f"Listed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            # Put stock, item ID, and seller in footer
+            embed.set_footer(text=f"Stock: {amount} | Item ID: {itemid} | Seller: {interaction.user.name}")
             embed.timestamp = datetime.now()
 
             # Create buy button
