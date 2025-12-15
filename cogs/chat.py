@@ -329,6 +329,70 @@ class Chat(commands.Cog):
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
+    @app_commands.command(name='debugdot', description='Show recent bot messages for debugging')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def debug_dot(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            guild_id_str = str(interaction.guild.id)
+            setups = self.config.get(guild_id_str, [])
+            
+            if not setups:
+                await interaction.followup.send("No setups configured!", ephemeral=True)
+                return
+            
+            # Get the watch channel from first setup
+            watch_channel_id = setups[0].get('watch_channel_id')
+            watch_channel = interaction.guild.get_channel(watch_channel_id)
+            
+            if not watch_channel:
+                await interaction.followup.send("Watch channel not found!", ephemeral=True)
+                return
+            
+            # Fetch last 10 messages from watch channel
+            messages = [msg async for msg in watch_channel.history(limit=10)]
+            
+            embed = discord.Embed(
+                title="🔍 Debug: Recent Messages",
+                description=f"Showing last {len(messages)} messages from {watch_channel.mention}",
+                color=discord.Color.blue()
+            )
+            
+            for msg in messages:
+                if msg.author.bot:
+                    embed_info = ""
+                    if msg.embeds:
+                        for i, emb in enumerate(msg.embeds):
+                            desc_preview = (emb.description[:50] + "...") if emb.description and len(emb.description) > 50 else (emb.description or "No description")
+                            embed_info += f"\nEmbed {i}: `{desc_preview}`"
+                    else:
+                        embed_info = f"\nText: `{msg.content[:50]}`"
+                    
+                    embed.add_field(
+                        name=f"Bot: {msg.author.name}",
+                        value=embed_info,
+                        inline=False
+                    )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
+            embed = discord.Embed(
+                title="❌ Error in Debug",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(Chat(bot))
