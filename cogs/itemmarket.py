@@ -92,8 +92,8 @@ class ItemMarket(commands.Cog):
             if imgurl:
                 embed.set_image(url=imgurl)
             
-            # Put stock, item ID, and seller in footer
-            embed.set_footer(text=f"Stock: {amount} | Item ID: {itemid} | Seller: {interaction.user.name}")
+            # Put stock, item ID, and seller in footer with extra space
+            embed.set_footer(text=f"Stock: {amount} | Item ID: {itemid} |  Seller: {interaction.user.name}")
             embed.timestamp = datetime.now()
 
             # Create buy button
@@ -343,12 +343,12 @@ class ItemMarket(commands.Cog):
                     
                     # Get seller username
                     try:
-                        seller = await interaction.guild.get_member(item['seller_id'])
+                        seller = interaction.guild.get_member(item['seller_id'])
                         seller_name = seller.name if seller else f"User {item['seller_id']}"
                     except:
                         seller_name = f"User {item['seller_id']}"
                     
-                    embed.set_footer(text=f"Stock: {item['amount']} | Item ID: {item['itemid']} | Seller: {seller_name}")
+                    embed.set_footer(text=f"Stock: {item['amount']} | Item ID: {item['itemid']} |  Seller: {seller_name}")
                     embed.timestamp = datetime.fromisoformat(item['timestamp'])
                     
                     # Recreate the buy button
