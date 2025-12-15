@@ -127,6 +127,48 @@ class Chat(commands.Cog):
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
+    @app_commands.command(name='cleardotnotify', description='Clear the dot notification setup')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def clear_dot_notify(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            guild_id_str = str(interaction.guild.id)
+            
+            if guild_id_str in self.config:
+                del self.config[guild_id_str]
+                self.save_config()
+                
+                embed = discord.Embed(
+                    title="✅ Dot Notification Cleared",
+                    description="The dot notification setup has been removed.",
+                    color=discord.Color.green()
+                )
+            else:
+                embed = discord.Embed(
+                    title="ℹ️ No Setup Found",
+                    description="There is no dot notification setup for this server.",
+                    color=discord.Color.blue()
+                )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
+            embed = discord.Embed(
+                title="❌ Error Clearing Setup",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(Chat(bot))
