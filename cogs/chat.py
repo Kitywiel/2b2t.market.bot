@@ -37,47 +37,52 @@ class Chat(commands.Cog):
             if not message.guild:
                 return
             
-            guild_id_str = str(message.guild.id)
-            config = self.config.get(guild_id_str, {})
-            
-            watch_channel_id = config.get('watch_channel_id')
-            forward_channel_id = config.get('forward_channel_id')
-            
-            if not watch_channel_id or not forward_channel_id:
-                return
-            
-            if message.channel.id != watch_channel_id:
-                return
-            
             if not message.content.startswith('.'):
                 return
             
-            forward_channel = message.guild.get_channel(forward_channel_id)
-            if not forward_channel:
-                print(f"Forward channel {forward_channel_id} not found")
+            guild_id_str = str(message.guild.id)
+            setups = self.config.get(guild_id_str, [])
+            
+            if not setups:
                 return
             
-            # If the message has embeds, forward them
-            if message.embeds:
-                for embed in message.embeds:
+            # Check all setups for this guild
+            for setup in setups:
+                watch_channel_id = setup.get('watch_channel_id')
+                forward_channel_id = setup.get('forward_channel_id')
+                
+                if not watch_channel_id or not forward_channel_id:
+                    continue
+                
+                # Skip if this message is not in this setup's watch channel
+                if message.channel.id != watch_channel_id:
+                    continue
+                
+                forward_channel = message.guild.get_channel(forward_channel_id)
+                if not forward_channel:
+                    continue
+                
+                # If the message has embeds, forward them
+                if message.embeds:
+                    for embed in message.embeds:
+                        await forward_channel.send(embed=embed)
+                else:
+                    # Extract username from message like ".Username connected"
+                    username = "Unknown"
+                    if message.content.startswith('.'):
+                        parts = message.content.split()
+                        if len(parts) > 0:
+                            username = parts[0][1:]  # Remove the dot
+                    
+                    # Create embed from text message
+                    embed = discord.Embed(
+                        description=message.content,
+                        color=discord.Color.blue()
+                    )
+                    embed.set_author(name=username, icon_url=message.author.display_avatar.url)
+                    embed.timestamp = message.created_at
+                    
                     await forward_channel.send(embed=embed)
-            else:
-                # Extract username from message like ".Username connected"
-                username = "Unknown"
-                if message.content.startswith('.'):
-                    parts = message.content.split()
-                    if len(parts) > 0:
-                        username = parts[0][1:]  # Remove the dot
-                
-                # Create embed from text message
-                embed = discord.Embed(
-                    description=message.content,
-                    color=discord.Color.blue()
-                )
-                embed.set_author(name=username, icon_url=message.author.display_avatar.url)
-                embed.timestamp = message.created_at
-                
-                await forward_channel.send(embed=embed)
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
@@ -96,10 +101,21 @@ class Chat(commands.Cog):
             guild_id_str = str(interaction.guild.id)
             
             if guild_id_str not in self.config:
-                self.config[guild_id_str] = {}
+                self.config[guild_id_str] = []
             
-            self.config[guild_id_str]['watch_channel_id'] = watch_channel.id
-            self.config[guild_id_str]['forward_channel_id'] = forward_channel.id
+            # Check if this watch channel already exists
+            existing = False
+            for setup in self.config[guild_id_str]:
+                if setup.get('watch_channel_id') == watch_channel.id:
+                    setup['forward_channel_id'] = forward_channel.id
+                    existing = True
+                    break
+            
+            if not existing:
+                self.config[guild_id_str].append({
+                    'watch_channel_id': watch_channel.id,
+                    'forward_channel_id': forward_channel.id
+                })
             
             self.save_config()
             
@@ -134,28 +150,55 @@ class Chat(commands.Cog):
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
-    @app_commands.command(name='cleardotnotify', description='Clear the dot notification setup')
+    @app_commands.command(name='cleardotnotify', description='Clear a specific dot notification setup')
+    @app_commands.describe(
+        watch_channel='The watch channel to remove (leave empty to clear all)'
+    )
     @app_commands.checks.has_permissions(administrator=True)
-    async def clear_dot_notify(self, interaction: discord.Interaction):
+    async def clear_dot_notify(self, interaction: discord.Interaction, watch_channel: discord.TextChannel = None):
         try:
             await interaction.response.defer(ephemeral=True)
             
             guild_id_str = str(interaction.guild.id)
             
-            if guild_id_str in self.config:
-                del self.config[guild_id_str]
-                self.save_config()
-                
-                embed = discord.Embed(
-                    title="✅ Dot Notification Cleared",
-                    description="The dot notification setup has been removed.",
-                    color=discord.Color.green()
-                )
-            else:
+            if guild_id_str not in self.config or not self.config[guild_id_str]:
                 embed = discord.Embed(
                     title="ℹ️ No Setup Found",
                     description="There is no dot notification setup for this server.",
                     color=discord.Color.blue()
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            
+            if watch_channel:
+                # Remove specific setup
+                original_count = len(self.config[guild_id_str])
+                self.config[guild_id_str] = [
+                    setup for setup in self.config[guild_id_str]
+                    if setup.get('watch_channel_id') != watch_channel.id
+                ]
+                
+                if len(self.config[guild_id_str]) < original_count:
+                    self.save_config()
+                    embed = discord.Embed(
+                        title="✅ Dot Notification Cleared",
+                        description=f"Removed setup for {watch_channel.mention}",
+                        color=discord.Color.green()
+                    )
+                else:
+                    embed = discord.Embed(
+                        title="ℹ️ No Setup Found",
+                        description=f"No setup found for {watch_channel.mention}",
+                        color=discord.Color.blue()
+                    )
+            else:
+                # Clear all setups
+                del self.config[guild_id_str]
+                self.save_config()
+                embed = discord.Embed(
+                    title="✅ All Dot Notifications Cleared",
+                    description="All dot notification setups have been removed.",
+                    color=discord.Color.green()
                 )
             
             await interaction.followup.send(embed=embed, ephemeral=True)
