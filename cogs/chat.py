@@ -86,12 +86,14 @@ class Chat(commands.Cog):
                                 if len(parts) >= 2:
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
+                                        await forward_channel.send("🔍 Sending embed...", delete_after=2)
                                         sent_msg = await forward_channel.send(embed=embed)
+                                        await forward_channel.send("🔍 Attempting publish...", delete_after=2)
                                         # Try to publish
                                         try:
                                             await sent_msg.publish()
                                             # Confirm publish
-                                            confirm = await forward_channel.send("✅ Published!", delete_after=3)
+                                            await forward_channel.send("✅ Published!", delete_after=3)
                                         except Exception as e:
                                             error_embed = discord.Embed(
                                                 title="⚠️ Publish Error",
