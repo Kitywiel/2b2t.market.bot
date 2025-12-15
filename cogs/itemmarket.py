@@ -83,11 +83,25 @@ class ItemMarket(commands.Cog):
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
             embed = discord.Embed(
                 title="❌ Error Adding Item",
-                description=f"An error occurred: {str(e)}",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
                 color=discord.Color.red()
             )
+            
+            # Add full traceback in a code block (truncate if too long)
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]  # Last 1000 chars
+            
+            embed.add_field(
+                name="Full Error Details",
+                value=f"```python\n{error_details}\n```",
+                inline=False
+            )
+            
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name='viewmarket', description='View all items in the market')
