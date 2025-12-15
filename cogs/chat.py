@@ -75,11 +75,8 @@ class Chat(commands.Cog):
                 
                 # If the message has embeds, forward only ones that start with .
                 if message.embeds:
-                    print(f"Found {len(message.embeds)} embeds in message from {message.author.name}")
-                    for i, embed in enumerate(message.embeds):
-                        print(f"Embed {i}: description = '{embed.description}'")
+                    for embed in message.embeds:
                         # Check if embed description contains a username starting with .
-                        # Format is usually: **username:** or **.username:**
                         if embed.description:
                             desc = embed.description.strip()
                             # Remove markdown bold if present
@@ -87,46 +84,18 @@ class Chat(commands.Cog):
                                 # Extract text between ** **
                                 parts = desc.split('**')
                                 if len(parts) >= 2:
-                                    username_part = parts[1]  # Get text between first ** **
+                                    username_part = parts[1]
                                     if username_part.startswith('.'):
-                                        print(f"Forwarding embed {i}!")
-                                        # Publish if in announcement channel, otherwise just send
-                                        if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
-                                            try:
-                                                sent_msg = await forward_channel.send(embed=embed)
-                                                await sent_msg.publish()
-                                            except:
-                                                await forward_channel.send(embed=embed)
-                                        else:
-                                            await forward_channel.send(embed=embed)
-                                    else:
-                                        print(f"Skipping embed {i} - username doesn't start with .")
-                                else:
-                                    print(f"Skipping embed {i} - no bold text found")
-                            elif desc.startswith('.'):
-                                print(f"Forwarding embed {i}!")
-                                # Publish if in announcement channel, otherwise just send
-                                if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
-                                    try:
-                                        sent_msg = await forward_channel.send(embed=embed)
-                                        await sent_msg.publish()
-                                    except:
                                         await forward_channel.send(embed=embed)
-                                else:
-                                    await forward_channel.send(embed=embed)
-                            else:
-                                print(f"Skipping embed {i} - doesn't start with . or **.")
-                        else:
-                            print(f"Skipping embed {i} - no description")
+                            elif desc.startswith('.'):
+                                await forward_channel.send(embed=embed)
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
-                    print(f"Text message starts with dot: {message.content}")
                     # Extract username from message like ".Username connected"
                     username = "Unknown"
-                    if message.content.startswith('.'):
-                        parts = message.content.split()
-                        if len(parts) > 0:
-                            username = parts[0][1:]  # Remove the dot
+                    parts = message.content.split()
+                    if len(parts) > 0:
+                        username = parts[0][1:]
                     
                     # Create embed from text message
                     embed = discord.Embed(
@@ -136,15 +105,7 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
-                    # Publish if in announcement channel, otherwise just send
-                    if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
-                        try:
-                            sent_msg = await forward_channel.send(embed=embed)
-                            await sent_msg.publish()
-                        except:
-                            await forward_channel.send(embed=embed)
-                    else:
-                        await forward_channel.send(embed=embed)
+                    await forward_channel.send(embed=embed)
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
