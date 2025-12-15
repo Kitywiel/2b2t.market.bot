@@ -74,12 +74,30 @@ class Chat(commands.Cog):
                     print(f"Found {len(message.embeds)} embeds in message from {message.author.name}")
                     for i, embed in enumerate(message.embeds):
                         print(f"Embed {i}: description = '{embed.description}'")
-                        # Check if embed description starts with a dot
-                        if embed.description and embed.description.strip().startswith('.'):
-                            print(f"Forwarding embed {i}!")
-                            await forward_channel.send(embed=embed)
+                        # Check if embed description contains a username starting with .
+                        # Format is usually: **username:** or **.username:**
+                        if embed.description:
+                            desc = embed.description.strip()
+                            # Remove markdown bold if present
+                            if desc.startswith('**'):
+                                # Extract text between ** **
+                                parts = desc.split('**')
+                                if len(parts) >= 2:
+                                    username_part = parts[1]  # Get text between first ** **
+                                    if username_part.startswith('.'):
+                                        print(f"Forwarding embed {i}!")
+                                        await forward_channel.send(embed=embed)
+                                    else:
+                                        print(f"Skipping embed {i} - username doesn't start with .")
+                                else:
+                                    print(f"Skipping embed {i} - no bold text found")
+                            elif desc.startswith('.'):
+                                print(f"Forwarding embed {i}!")
+                                await forward_channel.send(embed=embed)
+                            else:
+                                print(f"Skipping embed {i} - doesn't start with . or **.")
                         else:
-                            print(f"Skipping embed {i} - doesn't start with .")
+                            print(f"Skipping embed {i} - no description")
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     print(f"Text message starts with dot: {message.content}")
