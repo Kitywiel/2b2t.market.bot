@@ -305,6 +305,8 @@ class Chat(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_dot_config(self, interaction: discord.Interaction):
         try:
+            await interaction.response.defer(ephemeral=True)
+            
             self.config = {}
             self.save_config()
             
@@ -313,7 +315,7 @@ class Chat(commands.Cog):
                 description="The entire dot notification config has been cleared. You can now set up fresh.",
                 color=discord.Color.green()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
         
         except Exception as e:
             import traceback
@@ -329,10 +331,7 @@ class Chat(commands.Cog):
             )
             embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             
-            try:
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            except:
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot):
