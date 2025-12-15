@@ -91,13 +91,13 @@ class ItemMarket(commands.Cog):
             if imgurl:
                 embed.set_image(url=imgurl)
             
-            # Price field
-            embed.add_field(name="💰 Price", value=price, inline=False)
-            
-            # Amount, Item ID, and Seller on same line
+            # Amount, Item ID, and Seller below the image (inline)
             embed.add_field(name="📦 Amount", value=str(amount), inline=True)
             embed.add_field(name="🆔 Item ID", value=itemid, inline=True)
             embed.add_field(name="👤 Seller", value=interaction.user.mention, inline=True)
+            
+            # Price field
+            embed.add_field(name="💰 Price", value=price, inline=False)
             
             # Upload time at the footer
             embed.set_footer(text=f"Listed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -347,10 +347,10 @@ class ItemMarket(commands.Cog):
                     if item.get('imgurl'):
                         embed.set_image(url=item['imgurl'])
                     
-                    embed.add_field(name="💰 Price", value=item['price'], inline=False)
-                    embed.add_field(name="📦 Amount", value=str(item['amount']), inline=True)
+                    embed.add_field(name="� Amount", value=str(item['amount']), inline=True)
                     embed.add_field(name="🆔 Item ID", value=item['itemid'], inline=True)
                     embed.add_field(name="👤 Seller", value=f"<@{item['seller_id']}>", inline=True)
+                    embed.add_field(name="� Price", value=item['price'], inline=False)
                     
                     embed.set_footer(text=f"Listed on {item['timestamp'][:19]} | Updated")
                     
