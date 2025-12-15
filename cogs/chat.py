@@ -29,32 +29,33 @@ class Chat(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """Listen for messages starting with . in the watch channel"""
-        if message.author.bot:
-            return
-        
-        if not message.guild:
-            return
-        
-        guild_id_str = str(message.guild.id)
-        config = self.config.get(guild_id_str, {})
-        
-        watch_channel_id = config.get('watch_channel_id')
-        forward_channel_id = config.get('forward_channel_id')
-        
-        if not watch_channel_id or not forward_channel_id:
-            return
-        
-        if message.channel.id != watch_channel_id:
-            return
-        
-        if not message.content.startswith('.'):
-            return
-        
-        forward_channel = message.guild.get_channel(forward_channel_id)
-        if not forward_channel:
-            return
-        
         try:
+            if message.author.bot:
+                return
+            
+            if not message.guild:
+                return
+            
+            guild_id_str = str(message.guild.id)
+            config = self.config.get(guild_id_str, {})
+            
+            watch_channel_id = config.get('watch_channel_id')
+            forward_channel_id = config.get('forward_channel_id')
+            
+            if not watch_channel_id or not forward_channel_id:
+                return
+            
+            if message.channel.id != watch_channel_id:
+                return
+            
+            if not message.content.startswith('.'):
+                return
+            
+            forward_channel = message.guild.get_channel(forward_channel_id)
+            if not forward_channel:
+                print(f"Forward channel {forward_channel_id} not found")
+                return
+            
             # If the message has embeds, forward them
             if message.embeds:
                 for embed in message.embeds:
@@ -70,7 +71,9 @@ class Chat(commands.Cog):
                 
                 await forward_channel.send(embed=embed)
         except Exception as e:
-            print(f"Error forwarding message: {e}")
+            import traceback
+            print(f"Error in on_message listener: {e}")
+            traceback.print_exc()
 
     @app_commands.command(name='setupdotnotify', description='Setup the dot notification forwarding system')
     @app_commands.describe(
