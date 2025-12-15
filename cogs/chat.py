@@ -94,12 +94,21 @@ class Chat(commands.Cog):
                 setup_key = f"{watch_channel_id}_{forward_channel_id}"
                 webhook_urls = self.webhooks.get(str(message.guild.id), {}).get(setup_key, [])
                 
+                # Track if we've sent a message to avoid duplicates
+                message_sent = False
+                
                 # If the message has embeds, forward only ones that start with .
                 if message.embeds:
                     for embed in message.embeds:
+                        # Skip if we've already sent a message for this dot event
+                        if message_sent:
+                            continue
+                            
                         # Check if embed description contains a username starting with .
                         if embed.description:
                             desc = embed.description.strip()
+                            should_forward = False
+                            
                             # Remove markdown bold if present
                             if desc.startswith('**'):
                                 # Extract text between ** **
@@ -107,31 +116,28 @@ class Chat(commands.Cog):
                                 if len(parts) >= 2:
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
-                                        # Send to forward channel
-                                        await forward_channel.send(embed=embed)
-                                        
-                                        # Send to webhooks
-                                        for webhook_url in webhook_urls:
-                                            try:
-                                                async with aiohttp.ClientSession() as session:
-                                                    webhook = discord.Webhook.from_url(webhook_url, session=session)
-                                                    await webhook.send(embed=embed)
-                                            except:
-                                                pass
+                                        should_forward = True
                             elif desc.startswith('.'):
-                                # Send to forward channel
-                                await forward_channel.send(embed=embed)
+                                should_forward = True
+                            
+                            if should_forward:
+                                # Send to webhooks first if available
+                                if webhook_urls:
+                                    for webhook_url in webhook_urls:
+                                        try:
+                                            async with aiohttp.ClientSession() as session:
+                                                webhook = discord.Webhook.from_url(webhook_url, session=session)
+                                                await webhook.send(embed=embed)
+                                        except:
+                                            pass
+                                else:
+                                    # Only send to forward channel if no webhooks
+                                    await forward_channel.send(embed=embed)
                                 
-                                # Send to webhooks
-                                for webhook_url in webhook_urls:
-                                    try:
-                                        async with aiohttp.ClientSession() as session:
-                                            webhook = discord.Webhook.from_url(webhook_url, session=session)
-                                            await webhook.send(embed=embed)
-                                    except:
-                                        pass
+                                message_sent = True
+                                
                 # If message content starts with ., create embed
-                elif message.content.startswith('.'):
+                elif message.content.startswith('.') and not message_sent:
                     # Extract username from message like ".Username connected"
                     username = "Unknown"
                     parts = message.content.split()
@@ -146,17 +152,20 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
-                    # Send to forward channel
-                    await forward_channel.send(embed=embed)
+                    # Send to webhooks first if available
+                    if webhook_urls:
+                        for webhook_url in webhook_urls:
+                            try:
+                                async with aiohttp.ClientSession() as session:
+                                    webhook = discord.Webhook.from_url(webhook_url, session=session)
+                                    await webhook.send(embed=embed, username=username)
+                            except:
+                                pass
+                    else:
+                        # Only send to forward channel if no webhooks
+                        await forward_channel.send(embed=embed)
                     
-                    # Send to webhooks
-                    for webhook_url in webhook_urls:
-                        try:
-                            async with aiohttp.ClientSession() as session:
-                                webhook = discord.Webhook.from_url(webhook_url, session=session)
-                                await webhook.send(embed=embed, username=username)
-                        except:
-                            pass
+                    message_sent = True
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
