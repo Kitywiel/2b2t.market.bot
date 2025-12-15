@@ -84,20 +84,20 @@ class ItemMarket(commands.Cog):
             # Create market listing embed with new layout
             embed = discord.Embed(
                 title=name,
+                description=f"**Price:** {price}",
                 color=discord.Color.blue()
             )
             
-            # Set image at the top
+            # Set full image 
             if imgurl:
                 embed.set_image(url=imgurl)
             
-            # Amount, Item ID, and Seller below the image (inline)
-            embed.add_field(name="📦 Amount", value=str(amount), inline=True)
-            embed.add_field(name="🆔 Item ID", value=itemid, inline=True)
-            embed.add_field(name="👤 Seller", value=interaction.user.mention, inline=True)
-            
-            # Price field
-            embed.add_field(name="💰 Price", value=price, inline=False)
+            # Stock, Item ID, and Seller in one field below image
+            embed.add_field(
+                name=f"**{name}**", 
+                value=f"Stock: {amount}\nItem ID: {itemid}\nSeller: {interaction.user.mention}", 
+                inline=False
+            )
             
             # Upload time at the footer
             embed.set_footer(text=f"Listed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -341,16 +341,18 @@ class ItemMarket(commands.Cog):
                     # Recreate the embed with updated info
                     embed = discord.Embed(
                         title=item['name'],
+                        description=f"**Price:** {item['price']}",
                         color=discord.Color.blue()
                     )
                     
                     if item.get('imgurl'):
                         embed.set_image(url=item['imgurl'])
                     
-                    embed.add_field(name="� Amount", value=str(item['amount']), inline=True)
-                    embed.add_field(name="🆔 Item ID", value=item['itemid'], inline=True)
-                    embed.add_field(name="👤 Seller", value=f"<@{item['seller_id']}>", inline=True)
-                    embed.add_field(name="� Price", value=item['price'], inline=False)
+                    embed.add_field(
+                        name=f"**{item['name']}**", 
+                        value=f"Stock: {item['amount']}\nItem ID: {item['itemid']}\nSeller: <@{item['seller_id']}>", 
+                        inline=False
+                    )
                     
                     embed.set_footer(text=f"Listed on {item['timestamp'][:19]} | Updated")
                     
@@ -440,7 +442,7 @@ class ItemMarket(commands.Cog):
         embed.add_field(name="👤 Seller", value=f"<@{item['seller_id']}>", inline=True)
         
         if item.get('imgurl'):
-            embed.set_image(url=item['imgurl'])
+            embed.set_thumbnail(url=item['imgurl'])
         
         embed.set_footer(text=f"Listed on {item['timestamp'][:10]}")
         
