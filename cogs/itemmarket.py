@@ -151,6 +151,8 @@ class ItemMarket(commands.Cog):
     @app_commands.describe(item_channel='The channel where items will be posted')
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_market(self, interaction: discord.Interaction, item_channel: discord.TextChannel):
+        await interaction.response.defer()
+        
         try:
             guild_id_str = str(interaction.guild.id)
             
@@ -181,7 +183,7 @@ class ItemMarket(commands.Cog):
                 inline=False
             )
             
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
         
         except Exception as e:
             import traceback
@@ -202,10 +204,7 @@ class ItemMarket(commands.Cog):
                 inline=False
             )
             
-            try:
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            except:
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name='removeitem', description='Remove an item from the market')
     @app_commands.describe(message_id='The message ID of the item listing to remove')
