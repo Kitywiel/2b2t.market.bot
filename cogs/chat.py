@@ -17,6 +17,16 @@ class Chat(commands.Cog):
         if os.path.exists(self.config_file):
             with open(self.config_file, 'r') as f:
                 self.config = json.load(f)
+            
+            # Migrate old format to new format
+            for guild_id, data in list(self.config.items()):
+                if isinstance(data, dict) and 'watch_channel_id' in data:
+                    # Old format: convert to list
+                    self.config[guild_id] = [{
+                        'watch_channel_id': data['watch_channel_id'],
+                        'forward_channel_id': data['forward_channel_id']
+                    }]
+                    self.save_config()
         else:
             self.config = {}
             self.save_config()
