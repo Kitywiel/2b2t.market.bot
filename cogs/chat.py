@@ -426,12 +426,17 @@ class Chat(commands.Cog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             
-            # Validate webhook URL (accept both discord.com and discordapp.com)
-            if not (webhook_url.startswith('https://discord.com/api/webhooks/') or 
-                    webhook_url.startswith('https://discordapp.com/api/webhooks/')):
+            # Validate webhook URL (accept all Discord webhook formats)
+            valid_prefixes = [
+                'https://discord.com/api/webhooks/',
+                'https://discordapp.com/api/webhooks/',
+                'https://ptb.discord.com/api/webhooks/',
+                'https://canary.discord.com/api/webhooks/'
+            ]
+            if not any(webhook_url.startswith(prefix) for prefix in valid_prefixes):
                 embed = discord.Embed(
                     title="❌ Invalid Webhook",
-                    description="Please provide a valid Discord webhook URL.\nMust start with `https://discord.com/api/webhooks/` or `https://discordapp.com/api/webhooks/`",
+                    description="Please provide a valid Discord webhook URL.\nMust start with a Discord webhook URL format.",
                     color=discord.Color.red()
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
