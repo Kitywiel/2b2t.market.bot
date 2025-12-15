@@ -88,19 +88,25 @@ class Chat(commands.Cog):
                                     if username_part.startswith('.'):
                                         sent_msg = await forward_channel.send(embed=embed)
                                         # Publish if in announcement channel
+                                        print(f"Channel type check: is_news={hasattr(forward_channel, 'is_news')}, value={forward_channel.is_news() if hasattr(forward_channel, 'is_news') else 'N/A'}")
                                         if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
                                             try:
+                                                print(f"Attempting to publish message...")
                                                 await sent_msg.publish()
-                                            except:
-                                                pass
+                                                print(f"Published successfully!")
+                                            except Exception as pub_err:
+                                                print(f"Publish failed: {pub_err}")
                             elif desc.startswith('.'):
                                 sent_msg = await forward_channel.send(embed=embed)
                                 # Publish if in announcement channel
+                                print(f"Channel type check: is_news={hasattr(forward_channel, 'is_news')}, value={forward_channel.is_news() if hasattr(forward_channel, 'is_news') else 'N/A'}")
                                 if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
                                     try:
+                                        print(f"Attempting to publish message...")
                                         await sent_msg.publish()
-                                    except:
-                                        pass
+                                        print(f"Published successfully!")
+                                    except Exception as pub_err:
+                                        print(f"Publish failed: {pub_err}")
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
