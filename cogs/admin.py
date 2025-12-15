@@ -160,31 +160,23 @@ class Admin(commands.Cog):
         await interaction.response.defer()
         
         try:
-            # Get all loaded cogs
-            cog_names = list(self.bot.cogs.keys())
+            # Get all cog files from the cogs directory
+            cog_files = []
+            if os.path.exists('cogs'):
+                for filename in os.listdir('cogs'):
+                    if filename.endswith('.py') and not filename.startswith('_'):
+                        cog_files.append(filename[:-3])  # Remove .py extension
             
             reloaded = []
             failed = []
             
-            for cog_name in cog_names:
-                # Don't reload the Admin cog while we're using it
-                if cog_name == 'Admin':
-                    continue
-                    
+            for cog_name in cog_files:
                 try:
-                    # Find the extension name
-                    extension_name = f'cogs.{cog_name.lower()}'
+                    extension_name = f'cogs.{cog_name}'
                     await self.bot.reload_extension(extension_name)
                     reloaded.append(cog_name)
                 except Exception as e:
                     failed.append(f"{cog_name}: {str(e)}")
-            
-            # Reload Admin cog last
-            try:
-                await self.bot.reload_extension('cogs.admin')
-                reloaded.append('Admin')
-            except Exception as e:
-                failed.append(f"Admin: {str(e)}")
             
             embed = discord.Embed(
                 title="🔄 Reload All Cogs",
@@ -208,11 +200,18 @@ class Admin(commands.Cog):
             await interaction.followup.send(embed=embed)
             
         except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
             embed = discord.Embed(
                 title="❌ Reload All Failed",
-                description=f"Error: {str(e)}",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
                 color=discord.Color.red()
             )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             await interaction.followup.send(embed=embed)
 
     @app_commands.command(name='resetallconfigs', description='Delete ALL config/data files (chat_config.json, itemmarket.json, etc.)')
