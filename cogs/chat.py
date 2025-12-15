@@ -86,21 +86,9 @@ class Chat(commands.Cog):
                                 if len(parts) >= 2:
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
-                                        sent_msg = await forward_channel.send(embed=embed)
-                                        # Try to publish
-                                        try:
-                                            result = await sent_msg.publish()
-                                            await forward_channel.send(f"✅ Published successfully! Result: {result}", delete_after=5)
-                                        except discord.HTTPException as e:
-                                            await forward_channel.send(f"❌ HTTPException: {e.status} - {e.text}", delete_after=15)
-                                        except discord.Forbidden as e:
-                                            await forward_channel.send(f"❌ Forbidden: {e}", delete_after=15)
-                                        except Exception as e:
-                                            await forward_channel.send(f"❌ Error: {type(e).__name__} - {e}", delete_after=15)
+                                        await forward_channel.send(embed=embed)
                             elif desc.startswith('.'):
-                                sent_msg = await forward_channel.send(embed=embed)
-                                # Try to publish
-                                await sent_msg.publish()
+                                await forward_channel.send(embed=embed)
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
@@ -117,9 +105,7 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
-                    sent_msg = await forward_channel.send(embed=embed)
-                    # Try to publish
-                    await sent_msg.publish()
+                    await forward_channel.send(embed=embed)
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
