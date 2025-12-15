@@ -82,10 +82,12 @@ class Chat(commands.Cog):
                     print("Forward channel not found")
                     continue
                 
-                # If the message has embeds, forward them
+                # If the message has embeds, forward only ones that start with .
                 if message.embeds:
                     for embed in message.embeds:
-                        await forward_channel.send(embed=embed)
+                        # Check if embed description starts with a dot
+                        if embed.description and embed.description.strip().startswith('.'):
+                            await forward_channel.send(embed=embed)
                 else:
                     # Extract username from message like ".Username connected"
                     username = "Unknown"

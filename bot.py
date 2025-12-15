@@ -40,6 +40,16 @@ async def on_ready():
         print(f'Synced {len(synced)} slash command(s)')
     except Exception as e:
         print(f'Failed to sync commands: {e}')
+    
+    # Send restart notification
+    restart_channel_id = os.getenv('RESTART_CHANNEL_ID')
+    if restart_channel_id:
+        try:
+            channel = bot.get_channel(int(restart_channel_id))
+            if channel:
+                await channel.send("✅ Bot has restarted successfully!")
+        except Exception as e:
+            print(f'Failed to send restart notification: {e}')
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord. Interaction, error: app_commands. AppCommandError):
