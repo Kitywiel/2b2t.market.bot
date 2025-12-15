@@ -86,33 +86,21 @@ class Chat(commands.Cog):
                                 if len(parts) >= 2:
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
-                                        await forward_channel.send("🔍 Sending embed...", delete_after=2)
                                         sent_msg = await forward_channel.send(embed=embed)
-                                        await forward_channel.send("🔍 Attempting publish...", delete_after=2)
                                         # Try to publish
                                         try:
-                                            await sent_msg.publish()
-                                            # Confirm publish
-                                            await forward_channel.send("✅ Published!", delete_after=3)
+                                            result = await sent_msg.publish()
+                                            await forward_channel.send(f"✅ Published successfully! Result: {result}", delete_after=5)
+                                        except discord.HTTPException as e:
+                                            await forward_channel.send(f"❌ HTTPException: {e.status} - {e.text}", delete_after=15)
+                                        except discord.Forbidden as e:
+                                            await forward_channel.send(f"❌ Forbidden: {e}", delete_after=15)
                                         except Exception as e:
-                                            error_embed = discord.Embed(
-                                                title="⚠️ Publish Error",
-                                                description=f"Failed to publish message: {str(e)}",
-                                                color=discord.Color.orange()
-                                            )
-                                            await forward_channel.send(embed=error_embed, delete_after=10)
+                                            await forward_channel.send(f"❌ Error: {type(e).__name__} - {e}", delete_after=15)
                             elif desc.startswith('.'):
                                 sent_msg = await forward_channel.send(embed=embed)
                                 # Try to publish
-                                try:
-                                    await sent_msg.publish()
-                                except Exception as e:
-                                    error_embed = discord.Embed(
-                                        title="⚠️ Publish Error",
-                                        description=f"Failed to publish message: {str(e)}",
-                                        color=discord.Color.orange()
-                                    )
-                                    await forward_channel.send(embed=error_embed, delete_after=10)
+                                await sent_msg.publish()
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
@@ -131,10 +119,7 @@ class Chat(commands.Cog):
                     
                     sent_msg = await forward_channel.send(embed=embed)
                     # Try to publish
-                    try:
-                        await sent_msg.publish()
-                    except Exception as e:
-                        print(f"Publish error: {e}")
+                    await sent_msg.publish()
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
