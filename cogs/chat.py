@@ -137,9 +137,9 @@ class Chat(commands.Cog):
     @app_commands.command(name='cleardotnotify', description='Clear the dot notification setup')
     @app_commands.checks.has_permissions(administrator=True)
     async def clear_dot_notify(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        
         try:
+            await interaction.response.defer(ephemeral=True)
+            
             guild_id_str = str(interaction.guild.id)
             
             if guild_id_str in self.config:
