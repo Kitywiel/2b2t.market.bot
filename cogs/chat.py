@@ -123,11 +123,10 @@ class Chat(commands.Cog):
             if guild_id_str not in self.config:
                 self.config[guild_id_str] = []
             
-            # Check if this watch channel already exists
+            # Check if this exact combination already exists
             existing = False
             for setup in self.config[guild_id_str]:
-                if setup.get('watch_channel_id') == watch_channel.id:
-                    setup['forward_channel_id'] = forward_channel.id
+                if setup.get('watch_channel_id') == watch_channel.id and setup.get('forward_channel_id') == forward_channel.id:
                     existing = True
                     break
             
@@ -136,14 +135,20 @@ class Chat(commands.Cog):
                     'watch_channel_id': watch_channel.id,
                     'forward_channel_id': forward_channel.id
                 })
+                self.save_config()
+                
+                embed = discord.Embed(
+                    title="✅ Dot Notification Configured",
+                    description="The dot notification forwarding system has been set up!",
+                    color=discord.Color.green()
+                )
+            else:
+                embed = discord.Embed(
+                    title="ℹ️ Already Configured",
+                    description="This exact setup already exists.",
+                    color=discord.Color.blue()
+                )
             
-            self.save_config()
-            
-            embed = discord.Embed(
-                title="✅ Dot Notification Configured",
-                description="The dot notification forwarding system has been set up!",
-                color=discord.Color.green()
-            )
             embed.add_field(name="👀 Watch Channel", value=watch_channel.mention, inline=False)
             embed.add_field(name="📨 Forward Channel", value=forward_channel.mention, inline=False)
             embed.add_field(
@@ -177,17 +182,17 @@ class Chat(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def clear_dot_notify(self, interaction: discord.Interaction, watch_channel: discord.TextChannel = None):
         try:
-            await interaction.response.defer(ephemeral=True)
-            
             guild_id_str = str(interaction.guild.id)
             
             if guild_id_str not in self.config or not self.config[guild_id_str]:
-                embed = discord.Embed(
-                    title="ℹ️ No Setup Found",
-                    description="There is no dot notification setup for this server.",
-                    color=discord.Color.blue()
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="ℹ️ No Setup Found",
+                        description="There is no dot notification setup for this server.",
+                        color=discord.Color.blue()
+                    ),
+                    ephemeral=True
                 )
-                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             
             if watch_channel:
@@ -221,7 +226,7 @@ class Chat(commands.Cog):
                     color=discord.Color.green()
                 )
             
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
         
         except Exception as e:
             import traceback
@@ -237,7 +242,10 @@ class Chat(commands.Cog):
             )
             embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            try:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            except:
+                await interaction.followup.send(embed=embed, ephemeral=True)
 
 
     @app_commands.command(name='listdotnotify', description='List all dot notification setups')
