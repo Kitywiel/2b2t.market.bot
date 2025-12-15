@@ -87,20 +87,18 @@ class Chat(commands.Cog):
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
                                         sent_msg = await forward_channel.send(embed=embed)
-                                        # Publish if in announcement channel
-                                        if forward_channel.type == discord.ChannelType.news:
-                                            try:
-                                                await sent_msg.publish()
-                                            except:
-                                                pass
+                                        # Try to publish
+                                        try:
+                                            await sent_msg.publish()
+                                        except Exception as e:
+                                            print(f"Publish error: {e}")
                             elif desc.startswith('.'):
                                 sent_msg = await forward_channel.send(embed=embed)
-                                # Publish if in announcement channel
-                                if forward_channel.type == discord.ChannelType.news:
-                                    try:
-                                        await sent_msg.publish()
-                                    except:
-                                        pass
+                                # Try to publish
+                                try:
+                                    await sent_msg.publish()
+                                except Exception as e:
+                                    print(f"Publish error: {e}")
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
@@ -118,12 +116,11 @@ class Chat(commands.Cog):
                     embed.timestamp = message.created_at
                     
                     sent_msg = await forward_channel.send(embed=embed)
-                    # Publish if in announcement channel
-                    if forward_channel.type == discord.ChannelType.news:
-                        try:
-                            await sent_msg.publish()
-                        except:
-                            pass
+                    # Try to publish
+                    try:
+                        await sent_msg.publish()
+                    except Exception as e:
+                        print(f"Publish error: {e}")
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
