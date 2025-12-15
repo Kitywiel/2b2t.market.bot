@@ -394,9 +394,9 @@ class Chat(commands.Cog):
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def add_webhook(self, interaction: discord.Interaction, watch_channel: discord.TextChannel, webhook_url: str):
-        await interaction.response.defer(ephemeral=True)
-        
         try:
+            await interaction.response.defer(ephemeral=True)
+            
             guild_id_str = str(interaction.guild.id)
             
             # Find the setup for this watch channel
