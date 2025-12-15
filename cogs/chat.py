@@ -28,9 +28,10 @@ class Chat(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Listen for messages starting with . in the watch channel"""
+        """Listen for bot messages starting with . in the watch channel"""
         try:
-            if message.author.bot:
+            # Only process bot messages (from 2b2t.vc), not user messages
+            if not message.author.bot:
                 return
             
             if not message.guild:
