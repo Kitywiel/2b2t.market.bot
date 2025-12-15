@@ -90,6 +90,8 @@ class Chat(commands.Cog):
                                         # Try to publish
                                         try:
                                             await sent_msg.publish()
+                                            # Confirm publish
+                                            confirm = await forward_channel.send("✅ Published!", delete_after=3)
                                         except Exception as e:
                                             error_embed = discord.Embed(
                                                 title="⚠️ Publish Error",
