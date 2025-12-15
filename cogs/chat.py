@@ -44,6 +44,10 @@ class Chat(commands.Cog):
             if not message.author.bot:
                 return
             
+            # Don't process our own bot's messages
+            if message.author.id == self.bot.user.id:
+                return
+            
             if not message.guild:
                 return
             
@@ -86,26 +90,30 @@ class Chat(commands.Cog):
                                     username_part = parts[1]  # Get text between first ** **
                                     if username_part.startswith('.'):
                                         print(f"Forwarding embed {i}!")
-                                        sent_msg = await forward_channel.send(embed=embed)
-                                        # Publish if in announcement channel
+                                        # Publish if in announcement channel, otherwise just send
                                         if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
                                             try:
+                                                sent_msg = await forward_channel.send(embed=embed)
                                                 await sent_msg.publish()
                                             except:
-                                                pass
+                                                await forward_channel.send(embed=embed)
+                                        else:
+                                            await forward_channel.send(embed=embed)
                                     else:
                                         print(f"Skipping embed {i} - username doesn't start with .")
                                 else:
                                     print(f"Skipping embed {i} - no bold text found")
                             elif desc.startswith('.'):
                                 print(f"Forwarding embed {i}!")
-                                sent_msg = await forward_channel.send(embed=embed)
-                                # Publish if in announcement channel
+                                # Publish if in announcement channel, otherwise just send
                                 if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
                                     try:
+                                        sent_msg = await forward_channel.send(embed=embed)
                                         await sent_msg.publish()
                                     except:
-                                        pass
+                                        await forward_channel.send(embed=embed)
+                                else:
+                                    await forward_channel.send(embed=embed)
                             else:
                                 print(f"Skipping embed {i} - doesn't start with . or **.")
                         else:
@@ -128,13 +136,15 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
-                    sent_msg = await forward_channel.send(embed=embed)
-                    # Publish if in announcement channel
+                    # Publish if in announcement channel, otherwise just send
                     if hasattr(forward_channel, 'is_news') and forward_channel.is_news():
                         try:
+                            sent_msg = await forward_channel.send(embed=embed)
                             await sent_msg.publish()
                         except:
-                            pass
+                            await forward_channel.send(embed=embed)
+                    else:
+                        await forward_channel.send(embed=embed)
         except Exception as e:
             import traceback
             print(f"Error in on_message listener: {e}")
