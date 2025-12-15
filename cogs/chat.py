@@ -4,13 +4,16 @@ from discord.ext import commands
 import json
 import os
 from datetime import datetime
+import aiohttp
 
 
 class Chat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config_file = 'chat_config.json'
+        self.webhook_file = 'chat_webhooks.json'
         self.load_data()
+        self.load_webhooks()
 
     def load_data(self):
         """Load chat config data from JSON file"""
@@ -35,6 +38,20 @@ class Chat(commands.Cog):
         """Save config data to JSON file"""
         with open(self.config_file, 'w') as f:
             json.dump(self.config, f, indent=4)
+    
+    def load_webhooks(self):
+        """Load webhook URLs from JSON file"""
+        if os.path.exists(self.webhook_file):
+            with open(self.webhook_file, 'r') as f:
+                self.webhooks = json.load(f)
+        else:
+            self.webhooks = {}
+            self.save_webhooks()
+    
+    def save_webhooks(self):
+        """Save webhook URLs to JSON file"""
+        with open(self.webhook_file, 'w') as f:
+            json.dump(self.webhooks, f, indent=4)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -73,6 +90,10 @@ class Chat(commands.Cog):
                 if not forward_channel:
                     continue
                 
+                # Get webhooks for this setup
+                setup_key = f"{watch_channel_id}_{forward_channel_id}"
+                webhook_urls = self.webhooks.get(str(message.guild.id), {}).get(setup_key, [])
+                
                 # If the message has embeds, forward only ones that start with .
                 if message.embeds:
                     for embed in message.embeds:
@@ -86,19 +107,27 @@ class Chat(commands.Cog):
                                 if len(parts) >= 2:
                                     username_part = parts[1]
                                     if username_part.startswith('.'):
-                                        sent_msg = await forward_channel.send(embed=embed)
-                                        # Publish if in announcement channel
-                                        if forward_channel.type == discord.ChannelType.news:
+                                        # Send to forward channel
+                                        await forward_channel.send(embed=embed)
+                                        
+                                        # Send to webhooks
+                                        for webhook_url in webhook_urls:
                                             try:
-                                                await sent_msg.publish()
+                                                async with aiohttp.ClientSession() as session:
+                                                    webhook = discord.Webhook.from_url(webhook_url, session=session)
+                                                    await webhook.send(embed=embed)
                                             except:
                                                 pass
                             elif desc.startswith('.'):
-                                sent_msg = await forward_channel.send(embed=embed)
-                                # Publish if in announcement channel
-                                if forward_channel.type == discord.ChannelType.news:
+                                # Send to forward channel
+                                await forward_channel.send(embed=embed)
+                                
+                                # Send to webhooks
+                                for webhook_url in webhook_urls:
                                     try:
-                                        await sent_msg.publish()
+                                        async with aiohttp.ClientSession() as session:
+                                            webhook = discord.Webhook.from_url(webhook_url, session=session)
+                                            await webhook.send(embed=embed)
                                     except:
                                         pass
                 # If message content starts with ., create embed
@@ -117,11 +146,15 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
-                    sent_msg = await forward_channel.send(embed=embed)
-                    # Publish if in announcement channel
-                    if forward_channel.type == discord.ChannelType.news:
+                    # Send to forward channel
+                    await forward_channel.send(embed=embed)
+                    
+                    # Send to webhooks
+                    for webhook_url in webhook_urls:
                         try:
-                            await sent_msg.publish()
+                            async with aiohttp.ClientSession() as session:
+                                webhook = discord.Webhook.from_url(webhook_url, session=session)
+                                await webhook.send(embed=embed, username=username)
                         except:
                             pass
         except Exception as e:
@@ -347,6 +380,147 @@ class Chat(commands.Cog):
             
             embed = discord.Embed(
                 title="❌ Error Resetting Config",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @app_commands.command(name='addwebhook', description='Add a webhook URL to forward messages to other servers')
+    @app_commands.describe(
+        watch_channel='The watch channel',
+        webhook_url='The webhook URL from another server'
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def add_webhook(self, interaction: discord.Interaction, watch_channel: discord.TextChannel, webhook_url: str):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            guild_id_str = str(interaction.guild.id)
+            
+            # Find the setup for this watch channel
+            setups = self.config.get(guild_id_str, [])
+            matching_setup = None
+            
+            for setup in setups:
+                if setup.get('watch_channel_id') == watch_channel.id:
+                    matching_setup = setup
+                    break
+            
+            if not matching_setup:
+                embed = discord.Embed(
+                    title="❌ No Setup Found",
+                    description=f"No dot notification setup found for {watch_channel.mention}. Run `/setupdotnotify` first.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            
+            # Validate webhook URL
+            if not webhook_url.startswith('https://discord.com/api/webhooks/'):
+                embed = discord.Embed(
+                    title="❌ Invalid Webhook",
+                    description="Please provide a valid Discord webhook URL.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            
+            # Add webhook
+            if guild_id_str not in self.webhooks:
+                self.webhooks[guild_id_str] = {}
+            
+            setup_key = f"{matching_setup['watch_channel_id']}_{matching_setup['forward_channel_id']}"
+            
+            if setup_key not in self.webhooks[guild_id_str]:
+                self.webhooks[guild_id_str][setup_key] = []
+            
+            if webhook_url not in self.webhooks[guild_id_str][setup_key]:
+                self.webhooks[guild_id_str][setup_key].append(webhook_url)
+                self.save_webhooks()
+                
+                embed = discord.Embed(
+                    title="✅ Webhook Added",
+                    description=f"Webhook added for {watch_channel.mention}\nMessages will now be forwarded to this webhook.",
+                    color=discord.Color.green()
+                )
+            else:
+                embed = discord.Embed(
+                    title="ℹ️ Already Exists",
+                    description="This webhook is already configured.",
+                    color=discord.Color.blue()
+                )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
+            embed = discord.Embed(
+                title="❌ Error Adding Webhook",
+                description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @app_commands.command(name='listwebhooks', description='List all configured webhooks')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def list_webhooks(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            guild_id_str = str(interaction.guild.id)
+            guild_webhooks = self.webhooks.get(guild_id_str, {})
+            
+            if not guild_webhooks:
+                embed = discord.Embed(
+                    title="ℹ️ No Webhooks",
+                    description="No webhooks configured for this server.",
+                    color=discord.Color.blue()
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            
+            embed = discord.Embed(
+                title="📋 Configured Webhooks",
+                color=discord.Color.blue()
+            )
+            
+            for setup_key, webhook_list in guild_webhooks.items():
+                parts = setup_key.split('_')
+                if len(parts) == 2:
+                    watch_ch = interaction.guild.get_channel(int(parts[0]))
+                    watch_name = watch_ch.mention if watch_ch else f"Channel ID: {parts[0]}"
+                    
+                    webhook_preview = []
+                    for url in webhook_list:
+                        # Show last 20 chars of webhook URL
+                        webhook_preview.append(f"`...{url[-20:]}`")
+                    
+                    embed.add_field(
+                        name=f"Watch: {watch_name}",
+                        value=f"**{len(webhook_list)} webhook(s):**\n" + "\n".join(webhook_preview),
+                        inline=False
+                    )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            if len(error_details) > 1000:
+                error_details = error_details[-1000:]
+            
+            embed = discord.Embed(
+                title="❌ Error Listing Webhooks",
                 description=f"**Error Type:** `{type(e).__name__}`\n**Error Message:** {str(e)}",
                 color=discord.Color.red()
             )
