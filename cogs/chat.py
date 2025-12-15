@@ -91,14 +91,24 @@ class Chat(commands.Cog):
                                         try:
                                             await sent_msg.publish()
                                         except Exception as e:
-                                            print(f"Publish error: {e}")
+                                            error_embed = discord.Embed(
+                                                title="⚠️ Publish Error",
+                                                description=f"Failed to publish message: {str(e)}",
+                                                color=discord.Color.orange()
+                                            )
+                                            await forward_channel.send(embed=error_embed, delete_after=10)
                             elif desc.startswith('.'):
                                 sent_msg = await forward_channel.send(embed=embed)
                                 # Try to publish
                                 try:
                                     await sent_msg.publish()
                                 except Exception as e:
-                                    print(f"Publish error: {e}")
+                                    error_embed = discord.Embed(
+                                        title="⚠️ Publish Error",
+                                        description=f"Failed to publish message: {str(e)}",
+                                        color=discord.Color.orange()
+                                    )
+                                    await forward_channel.send(embed=error_embed, delete_after=10)
                 # If message content starts with ., create embed
                 elif message.content.startswith('.'):
                     # Extract username from message like ".Username connected"
