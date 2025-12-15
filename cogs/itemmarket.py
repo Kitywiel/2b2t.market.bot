@@ -341,13 +341,15 @@ class ItemMarket(commands.Cog):
                     if item.get('imgurl'):
                         embed.set_image(url=item['imgurl'])
                     
-                    embed.add_field(
-                        name=f"**{item['name']}**", 
-                        value=f"Stock: {item['amount']}\nItem ID: {item['itemid']}\nSeller: <@{item['seller_id']}>", 
-                        inline=False
-                    )
+                    # Get seller username
+                    try:
+                        seller = await interaction.guild.get_member(item['seller_id'])
+                        seller_name = seller.name if seller else f"User {item['seller_id']}"
+                    except:
+                        seller_name = f"User {item['seller_id']}"
                     
-                    embed.set_footer(text=f"Listed on {item['timestamp'][:19]} | Updated")
+                    embed.set_footer(text=f"Stock: {item['amount']} | Item ID: {item['itemid']} | Seller: {seller_name}")
+                    embed.timestamp = datetime.fromisoformat(item['timestamp'])
                     
                     # Recreate the buy button
                     view = BuyButton(self, item_index)
