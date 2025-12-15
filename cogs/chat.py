@@ -72,13 +72,13 @@ class Chat(commands.Cog):
         except Exception as e:
             print(f"Error forwarding message: {e}")
 
-    @app_commands.command(name='setupchat', description='Setup the chat forwarding system')
+    @app_commands.command(name='setupdotnotify', description='Setup the dot notification forwarding system')
     @app_commands.describe(
         watch_channel='Channel to watch for dot commands',
         forward_channel='Channel to forward dot messages to'
     )
     @app_commands.checks.has_permissions(administrator=True)
-    async def setup_chat(self, interaction: discord.Interaction, watch_channel: discord.TextChannel, forward_channel: discord.TextChannel):
+    async def setup_dot_notify(self, interaction: discord.Interaction, watch_channel: discord.TextChannel, forward_channel: discord.TextChannel):
         await interaction.response.defer()
         
         try:
@@ -93,8 +93,8 @@ class Chat(commands.Cog):
             self.save_config()
             
             embed = discord.Embed(
-                title="✅ Chat Forwarding Configured",
-                description="The chat forwarding system has been set up!",
+                title="✅ Dot Notification Configured",
+                description="The dot notification forwarding system has been set up!",
                 color=discord.Color.green()
             )
             embed.add_field(name="👀 Watch Channel", value=watch_channel.mention, inline=False)
