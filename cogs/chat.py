@@ -43,12 +43,10 @@ class Chat(commands.Cog):
                     self.save_config()
             
             print(f"[LOAD] Loaded config for {len(self.config)} guild(s)")
-            self.log(f"[LOAD] Loaded config for {len(self.config)} guild(s)")
         else:
             self.config = {}
             self.save_config()
             print("[LOAD] No config file found, created new one")
-            self.log("[LOAD] No config file found, created new one")
     
     def save_config(self):
         """Save config data to JSON file"""
