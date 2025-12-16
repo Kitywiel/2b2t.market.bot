@@ -77,10 +77,6 @@ class Chat(commands.Cog):
     async def on_message(self, message):
         """Listen for bot messages starting with . in the watch channel"""
         try:
-            # Wait until cog is fully ready
-            if not self.is_ready:
-                return
-            
             # Only process bot messages (from 2b2t.vc), not user messages
             if not message.author.bot:
                 return
