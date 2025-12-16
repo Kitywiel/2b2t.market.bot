@@ -13,9 +13,18 @@ class Chat(commands.Cog):
         self.config_file = 'chat_config.json'
         self.webhook_file = 'chat_webhooks.json'
         self.is_ready = False
+        self.debug_logs = []  # Store recent logs for remote debugging
+        self.max_logs = 50  # Keep last 50 log entries
         self.load_data()
         self.load_webhooks()
-        print(f"[INIT] Chat cog initialized. Config: {len(self.config)} guilds, Webhooks: {len(self.webhooks)} guilds")
+        self.log(f"[INIT] Chat cog initialized. Config: {len(self.config)} guilds, Webhooks: {len(self.webhooks)} guilds")
+    
+    def log(self, message):
+        """Log a message and store it for remote viewing"""
+        print(message)
+        self.debug_logs.append(f"{datetime.now().strftime('%H:%M:%S')} - {message}")
+        if len(self.debug_logs) > self.max_logs:
+            self.debug_logs.pop(0)
 
     def load_data(self):
         """Load chat config data from JSON file"""
@@ -34,10 +43,12 @@ class Chat(commands.Cog):
                     self.save_config()
             
             print(f"[LOAD] Loaded config for {len(self.config)} guild(s)")
+            self.log(f"[LOAD] Loaded config for {len(self.config)} guild(s)")
         else:
             self.config = {}
             self.save_config()
             print("[LOAD] No config file found, created new one")
+            self.log("[LOAD] No config file found, created new one")
     
     def save_config(self):
         """Save config data to JSON file"""
@@ -95,6 +106,7 @@ class Chat(commands.Cog):
                 return
             
             print(f"[DEBUG] Processing message from {message.author.name} in #{message.channel.name}")
+            self.log(f"[DEBUG] Processing message from {message.author.name} in #{message.channel.name}")
             
             # Track if we've sent a message to avoid duplicates (globally per message)
             message_sent = False
@@ -116,10 +128,12 @@ class Chat(commands.Cog):
                     continue
                 
                 print(f"[MATCH] Message matches setup: watch={watch_channel_id} forward={forward_channel_id}")
+                self.log(f"[MATCH] Message matches setup: watch={watch_channel_id} forward={forward_channel_id}")
                 
                 forward_channel = message.guild.get_channel(forward_channel_id)
                 if not forward_channel:
                     print(f"[ERROR] Forward channel {forward_channel_id} not found!")
+                    self.log(f"[ERROR] Forward channel {forward_channel_id} not found!")
                     continue
                 
                 # Get webhooks for this setup
@@ -151,6 +165,7 @@ class Chat(commands.Cog):
                             
                             if should_forward:
                                 print(f"[FORWARD] Forwarding dot message: {desc[:50]}...")
+                                self.log(f"[FORWARD] Forwarding dot message: {desc[:50]}...")
                                 
                                 # Send to webhooks first if available
                                 if webhook_urls:
@@ -577,6 +592,33 @@ class Chat(commands.Cog):
             embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
             
             await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @app_commands.command(name='viewlogs', description='View recent debug logs (for remote debugging)')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def view_logs(self, interaction: discord.Interaction):
+        """View the last 50 log messages"""
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            if not self.debug_logs:
+                embed = discord.Embed(
+                    title="📋 Debug Logs",
+                    description="No logs available yet.",
+                    color=discord.Color.blue()
+                )
+            else:
+                # Split logs into chunks to fit Discord's 1024 character field limit
+                logs_text = "\n".join(self.debug_logs[-30:])  # Last 30 logs
+                
+                embed = discord.Embed(
+                    title="📋 Debug Logs (Last 30)",
+                    description=f"```\n{logs_text[:4000]}\n```",
+                    color=discord.Color.blue()
+                )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"Error: {e}", ephemeral=True)
 
     @app_commands.command(name='addwebhook', description='Add a webhook URL to forward messages to other servers')
     @app_commands.describe(
