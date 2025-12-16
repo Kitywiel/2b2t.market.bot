@@ -12,8 +12,10 @@ class Chat(commands.Cog):
         self.bot = bot
         self.config_file = 'chat_config.json'
         self.webhook_file = 'chat_webhooks.json'
+        self.is_ready = False
         self.load_data()
         self.load_webhooks()
+        print(f"[INIT] Chat cog initialized. Config: {len(self.config)} guilds, Webhooks: {len(self.webhooks)} guilds")
 
     def load_data(self):
         """Load chat config data from JSON file"""
@@ -30,9 +32,12 @@ class Chat(commands.Cog):
                         'forward_channel_id': data['forward_channel_id']
                     }]
                     self.save_config()
+            
+            print(f"[LOAD] Loaded config for {len(self.config)} guild(s)")
         else:
             self.config = {}
             self.save_config()
+            print("[LOAD] No config file found, created new one")
     
     def save_config(self):
         """Save config data to JSON file"""
@@ -44,9 +49,11 @@ class Chat(commands.Cog):
         if os.path.exists(self.webhook_file):
             with open(self.webhook_file, 'r') as f:
                 self.webhooks = json.load(f)
+            print(f"[LOAD] Loaded webhooks for {len(self.webhooks)} guild(s)")
         else:
             self.webhooks = {}
             self.save_webhooks()
+            print("[LOAD] No webhook file found, created new one")
     
     def save_webhooks(self):
         """Save webhook URLs to JSON file"""
@@ -54,9 +61,26 @@ class Chat(commands.Cog):
             json.dump(self.webhooks, f, indent=4)
 
     @commands.Cog.listener()
+    async def on_ready(self):
+        """Called when bot is ready"""
+        self.is_ready = True
+        print(f"[READY] Chat cog is ready. Monitoring {sum(len(setups) for setups in self.config.values())} setup(s) across {len(self.config)} guild(s)")
+        
+        # Log all active setups
+        for guild_id, setups in self.config.items():
+            for setup in setups:
+                watch_id = setup.get('watch_channel_id')
+                forward_id = setup.get('forward_channel_id')
+                print(f"[READY] Guild {guild_id}: Watching channel {watch_id} -> Forwarding to {forward_id}")
+
+    @commands.Cog.listener()
     async def on_message(self, message):
         """Listen for bot messages starting with . in the watch channel"""
         try:
+            # Wait until cog is fully ready
+            if not self.is_ready:
+                return
+            
             # Only process bot messages (from 2b2t.vc), not user messages
             if not message.author.bot:
                 return
@@ -73,6 +97,8 @@ class Chat(commands.Cog):
             
             if not setups:
                 return
+            
+            print(f"[DEBUG] Processing message from {message.author.name} in #{message.channel.name}")
             
             # Track if we've sent a message to avoid duplicates (globally per message)
             message_sent = False
@@ -93,8 +119,11 @@ class Chat(commands.Cog):
                 if message.channel.id != watch_channel_id:
                     continue
                 
+                print(f"[MATCH] Message matches setup: watch={watch_channel_id} forward={forward_channel_id}")
+                
                 forward_channel = message.guild.get_channel(forward_channel_id)
                 if not forward_channel:
+                    print(f"[ERROR] Forward channel {forward_channel_id} not found!")
                     continue
                 
                 # Get webhooks for this setup
@@ -125,17 +154,37 @@ class Chat(commands.Cog):
                                 should_forward = True
                             
                             if should_forward:
+                                print(f"[FORWARD] Forwarding dot message: {desc[:50]}...")
+                                
                                 # Send to webhooks first if available
                                 if webhook_urls:
+                                    print(f"[WEBHOOK] Attempting to send to {len(webhook_urls)} webhook(s)")
+                                    webhook_failed = False
+                                    webhook_success = False
                                     for webhook_url in webhook_urls:
                                         try:
                                             async with aiohttp.ClientSession() as session:
                                                 webhook = discord.Webhook.from_url(webhook_url, session=session)
                                                 await webhook.send(embed=embed)
-                                        except:
-                                            pass
+                                                print(f"[WEBHOOK] ✅ Sent successfully to webhook")
+                                                webhook_success = True
+                                        except discord.NotFound:
+                                            print(f"[WEBHOOK] ❌ Webhook not found (deleted): {webhook_url[:50]}...")
+                                            webhook_failed = True
+                                        except discord.HTTPException as e:
+                                            print(f"[WEBHOOK] ❌ HTTP error {e.status}: {e.text}")
+                                            webhook_failed = True
+                                        except Exception as e:
+                                            print(f"[WEBHOOK] ❌ Error {type(e).__name__}: {e}")
+                                            webhook_failed = True
+                                    
+                                    # Fallback to forward channel if all webhooks failed
+                                    if webhook_failed and not webhook_success:
+                                        print(f"[CHANNEL] All webhooks failed, sending to channel #{forward_channel.name}")
+                                        await forward_channel.send(embed=embed)
                                 else:
                                     # Only send to forward channel if no webhooks
+                                    print(f"[CHANNEL] No webhooks, sending to #{forward_channel.name}")
                                     await forward_channel.send(embed=embed)
                                 
                                 message_sent = True
@@ -156,24 +205,65 @@ class Chat(commands.Cog):
                     embed.set_author(name=username, icon_url=message.author.display_avatar.url)
                     embed.timestamp = message.created_at
                     
+                    print(f"[FORWARD] Forwarding text message: {message.content[:50]}...")
+                    
                     # Send to webhooks first if available
                     if webhook_urls:
+                        print(f"[WEBHOOK] Attempting to send to {len(webhook_urls)} webhook(s)")
+                        webhook_failed = False
+                        webhook_success = False
                         for webhook_url in webhook_urls:
                             try:
                                 async with aiohttp.ClientSession() as session:
                                     webhook = discord.Webhook.from_url(webhook_url, session=session)
                                     await webhook.send(embed=embed, username=username)
-                            except:
-                                pass
+                                    print(f"[WEBHOOK] ✅ Sent successfully to webhook")
+                                    webhook_success = True
+                            except discord.NotFound:
+                                print(f"[WEBHOOK] ❌ Webhook not found (deleted): {webhook_url[:50]}...")
+                                webhook_failed = True
+                            except discord.HTTPException as e:
+                                print(f"[WEBHOOK] ❌ HTTP error {e.status}: {e.text}")
+                                webhook_failed = True
+                            except Exception as e:
+                                print(f"[WEBHOOK] ❌ Error {type(e).__name__}: {e}")
+                                webhook_failed = True
+                        
+                        # Fallback to forward channel if all webhooks failed
+                        if webhook_failed and not webhook_success:
+                            print(f"[CHANNEL] All webhooks failed, sending to channel #{forward_channel.name}")
+                            await forward_channel.send(embed=embed)
                     else:
                         # Only send to forward channel if no webhooks
+                        print(f"[CHANNEL] No webhooks, sending to #{forward_channel.name}")
                         await forward_channel.send(embed=embed)
                     
                     message_sent = True
         except Exception as e:
             import traceback
-            print(f"Error in on_message listener: {e}")
+            error_msg = f"[ERROR] on_message listener crashed: {type(e).__name__}: {e}"
+            print(error_msg)
             traceback.print_exc()
+            
+            # Try to notify in a debug channel if available
+            try:
+                if message.guild:
+                    # Try to send error to the forward channel
+                    guild_id_str = str(message.guild.id)
+                    setups = self.config.get(guild_id_str, [])
+                    if setups:
+                        forward_channel_id = setups[0].get('forward_channel_id')
+                        if forward_channel_id:
+                            forward_channel = message.guild.get_channel(forward_channel_id)
+                            if forward_channel:
+                                error_embed = discord.Embed(
+                                    title="⚠️ Forwarding Error",
+                                    description=f"```{error_msg[:1900]}```",
+                                    color=discord.Color.red()
+                                )
+                                await forward_channel.send(embed=error_embed)
+            except:
+                pass  # Don't crash while trying to report the crash
 
     @app_commands.command(name='setupdotnotify', description='Setup the dot notification forwarding system')
     @app_commands.describe(
@@ -365,6 +455,82 @@ class Chat(commands.Cog):
                 color=discord.Color.red()
             )
             embed.add_field(name="Full Error Details", value=f"```python\n{error_details}\n```", inline=False)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @app_commands.command(name='checkdotstatus', description='Check if dot notification forwarding is working')
+    @app_commands.checks.has_permissions(administrator=True)
+    async def check_dot_status(self, interaction: discord.Interaction):
+        """Check the health and status of the dot notification system"""
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            guild_id_str = str(interaction.guild.id)
+            setups = self.config.get(guild_id_str, [])
+            
+            embed = discord.Embed(
+                title="🔍 Dot Notification Status",
+                color=discord.Color.green()
+            )
+            
+            # Bot status
+            embed.add_field(
+                name="✅ Bot Status",
+                value=f"Online and listening to messages\nLatency: {round(self.bot.latency * 1000)}ms",
+                inline=False
+            )
+            
+            # Setup count
+            embed.add_field(
+                name="📋 Active Setups",
+                value=f"{len(setups)} setup(s) configured",
+                inline=True
+            )
+            
+            # Check each setup
+            if setups:
+                for i, setup in enumerate(setups, 1):
+                    watch_ch = interaction.guild.get_channel(setup.get('watch_channel_id'))
+                    forward_ch = interaction.guild.get_channel(setup.get('forward_channel_id'))
+                    
+                    watch_status = "✅" if watch_ch else "❌"
+                    forward_status = "✅" if forward_ch else "❌"
+                    
+                    # Check webhook status
+                    setup_key = f"{setup.get('watch_channel_id')}_{setup.get('forward_channel_id')}"
+                    webhook_urls = self.webhooks.get(guild_id_str, {}).get(setup_key, [])
+                    webhook_count = len(webhook_urls)
+                    
+                    watch_name = watch_ch.mention if watch_ch else "Channel Deleted"
+                    forward_name = forward_ch.mention if forward_ch else "Channel Deleted"
+                    
+                    embed.add_field(
+                        name=f"Setup #{i}",
+                        value=f"{watch_status} Watch: {watch_name}\n{forward_status} Forward: {forward_name}\n🔗 Webhooks: {webhook_count}",
+                        inline=True
+                    )
+            else:
+                embed.add_field(
+                    name="⚠️ No Setups",
+                    value="No dot notification setups configured. Use `/setupdotnotify` to create one.",
+                    inline=False
+                )
+            
+            embed.set_footer(text="This command confirms the bot is running and can process commands.")
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        except Exception as e:
+            import traceback
+            error_details = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            
+            embed = discord.Embed(
+                title="❌ Error Checking Status",
+                description=f"**Error:** `{type(e).__name__}: {str(e)}`",
+                color=discord.Color.red()
+            )
+            if len(error_details) < 1000:
+                embed.add_field(name="Details", value=f"```python\n{error_details}\n```", inline=False)
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
