@@ -534,6 +534,22 @@ class Chat(commands.Cog):
             
             await interaction.followup.send(embed=embed, ephemeral=True)
 
+    @app_commands.command(name='dotping', description='Test if the chat cog is working')
+    async def dot_ping(self, interaction: discord.Interaction):
+        """Simple test command to verify cog is loaded and working"""
+        try:
+            guild_id_str = str(interaction.guild.id)
+            setups = self.config.get(guild_id_str, [])
+            
+            embed = discord.Embed(
+                title="🏓 Pong!",
+                description=f"Chat cog is loaded and working.\n\n**Setups:** {len(setups)}\n**Ready:** {self.is_ready}",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"Error: {e}", ephemeral=True)
+
     @app_commands.command(name='resetdotconfig', description='Delete the entire dot config file and start fresh')
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_dot_config(self, interaction: discord.Interaction):
