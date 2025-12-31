@@ -2,6 +2,5 @@
 
 ## commands
 
-`/ping` test's if the bot respons. returns `Pong [ms delay]`
-
+`/ping` test's if the bot respons. returns `Pong [ms delay]`<br>
 `/echo` echo's back what you saided
