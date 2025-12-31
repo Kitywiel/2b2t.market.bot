@@ -1,5 +1,13 @@
 # 2b2t Market Discord Bot
 
+## updates
+
+### Added:
+
+### removed:
+
+Version: v0.0.1
+
 ## commands
 
 `/ping` test's if the bot respons. returns `Pong [ms delay]` <br>
