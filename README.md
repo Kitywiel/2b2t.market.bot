@@ -8,4 +8,4 @@
 
 ## developers
 
-Kitywiel
+ - Kitywiel
