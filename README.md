@@ -3,4 +3,4 @@
 ## commands
 
 ### /ping
-tests if the bot respons
+test's if the bot respons. returns `Pong [ms delay]`
